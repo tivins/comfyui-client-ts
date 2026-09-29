@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 — 2026-09-29
+
+`README.md` décrit l'installation en dépendance `file:`, l'appel `generateQwenImage`, `clearHistory`, et les options du script `bun generate`.
+
 ## 0.8.0 — 2026-09-29
 
 `package.json` expose `"."` vers `src/index.ts`. Un autre projet Bun peut dépendre de `comfyui-client` avec `"file:../client-ts"` et importer `generateQwenImage`, `clearHistory` et les réglages du workflow depuis `"comfyui-client"`. `client-ts-example` montre cet appel.

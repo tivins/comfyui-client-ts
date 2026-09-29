@@ -21,7 +21,7 @@ const settings: GenerateSettings = {
 const prompts = [
     {
         prompt: "an old dog running in a grass field, daylight",
-        negativePrompt: "blur,bad quality",
+        negativePrompt: " ",
     },
 ];
 
