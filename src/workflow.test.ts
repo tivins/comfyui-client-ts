@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
 import { parseGenerateArgs } from "./generate.ts";
-import { QWEN_IMAGE_DEFAULTS, buildQwenImagePrompt, type QwenImageOptions } from "./workflow.ts";
+import {
+  Aspect,
+  QWEN_IMAGE_DEFAULTS,
+  Sampler,
+  Scheduler,
+  buildQwenImagePrompt,
+  type QwenImageOptions,
+} from "./workflow.ts";
 
 const baseOptions: QwenImageOptions = {
   prompt: "a red kettle",
@@ -13,6 +20,16 @@ const baseOptions: QwenImageOptions = {
   steps: QWEN_IMAGE_DEFAULTS.steps,
   scheduler: QWEN_IMAGE_DEFAULTS.scheduler,
 };
+
+describe("Sampler", () => {
+  test("expose la chaîne attendue par ComfyUI", () => {
+    expect(Aspect.Standard).toBe("4:3 (Standard)");
+    expect(Sampler.Euler).toBe("euler");
+    expect(Scheduler.Simple).toBe("simple");
+    expect(Sampler.Dpmpp2m).toBe("dpmpp_2m");
+    expect(Scheduler.Karras).toBe("karras");
+  });
+});
 
 describe("buildQwenImagePrompt", () => {
   test("place le prompt et le négatif sur le nœud 484", () => {

@@ -10,108 +10,121 @@ export type ApiNode = {
 
 export type ApiPrompt = Record<string, ApiNode>;
 
-export const ASPECT_RATIOS = [
-  "1:1 (Square)",
-  "2:3 (Portrait Photo)",
-  "3:2 (Photo)",
-  "3:4 (Portrait Standard)",
-  "4:3 (Standard)",
-  "9:16 (Portrait Widescreen)",
-  "16:9 (Widescreen)",
-  "21:9 (Ultrawide)",
-] as const;
+function values<const T extends Record<string, string>>(record: T): T[keyof T][] {
+  return Object.values(record) as T[keyof T][];
+}
 
-export type AspectRatio = (typeof ASPECT_RATIOS)[number];
+/** Ratios du nœud `ResolutionSelector`. La valeur est la chaîne envoyée à ComfyUI. */
+export const Aspect = {
+  Square: "1:1 (Square)",
+  PortraitPhoto: "2:3 (Portrait Photo)",
+  Photo: "3:2 (Photo)",
+  PortraitStandard: "3:4 (Portrait Standard)",
+  Standard: "4:3 (Standard)",
+  PortraitWidescreen: "9:16 (Portrait Widescreen)",
+  Widescreen: "16:9 (Widescreen)",
+  Ultrawide: "21:9 (Ultrawide)",
+} as const;
 
-export const SAMPLER_NAMES = [
-  "euler",
-  "euler_cfg_pp",
-  "euler_ancestral",
-  "euler_ancestral_cfg_pp",
-  "heun",
-  "heunpp2",
-  "exp_heun_2_x0",
-  "exp_heun_2_x0_sde",
-  "dpm_2",
-  "dpm_2_ancestral",
-  "lms",
-  "dpm_fast",
-  "dpm_adaptive",
-  "dpmpp_2s_ancestral",
-  "dpmpp_2s_ancestral_cfg_pp",
-  "dpmpp_sde",
-  "dpmpp_sde_gpu",
-  "dpmpp_2m",
-  "dpmpp_2m_cfg_pp",
-  "dpmpp_2m_sde",
-  "dpmpp_2m_sde_gpu",
-  "dpmpp_2m_sde_heun",
-  "dpmpp_2m_sde_heun_gpu",
-  "dpmpp_3m_sde",
-  "dpmpp_3m_sde_gpu",
-  "ddpm",
-  "lcm",
-  "ipndm",
-  "ipndm_v",
-  "deis",
-  "cfgpp_ud10_ab",
-  "res_multistep",
-  "res_multistep_cfg_pp",
-  "res_multistep_ancestral",
-  "res_multistep_ancestral_cfg_pp",
-  "gradient_estimation",
-  "gradient_estimation_cfg_pp",
-  "er_sde",
-  "seeds_2",
-  "seeds_3",
-  "sa_solver",
-  "sa_solver_pece",
-  "ddim",
-  "uni_pc",
-  "uni_pc_bh2",
-] as const;
+export type Aspect = (typeof Aspect)[keyof typeof Aspect];
 
-export type SamplerName = (typeof SAMPLER_NAMES)[number];
+export const ASPECT_RATIOS: Aspect[] = values(Aspect);
 
-export const SCHEDULER_NAMES = [
-  "simple",
-  "sgm_uniform",
-  "karras",
-  "exponential",
-  "ddim_uniform",
-  "beta",
-  "normal",
-  "linear_quadratic",
-  "kl_optimal",
-] as const;
+/** Noms de sampler du `KSampler`. La valeur est la chaîne envoyée à ComfyUI. */
+export const Sampler = {
+  Euler: "euler",
+  EulerCfgPp: "euler_cfg_pp",
+  EulerAncestral: "euler_ancestral",
+  EulerAncestralCfgPp: "euler_ancestral_cfg_pp",
+  Heun: "heun",
+  Heunpp2: "heunpp2",
+  ExpHeun2X0: "exp_heun_2_x0",
+  ExpHeun2X0Sde: "exp_heun_2_x0_sde",
+  Dpm2: "dpm_2",
+  Dpm2Ancestral: "dpm_2_ancestral",
+  Lms: "lms",
+  DpmFast: "dpm_fast",
+  DpmAdaptive: "dpm_adaptive",
+  Dpmpp2sAncestral: "dpmpp_2s_ancestral",
+  Dpmpp2sAncestralCfgPp: "dpmpp_2s_ancestral_cfg_pp",
+  DpmppSde: "dpmpp_sde",
+  DpmppSdeGpu: "dpmpp_sde_gpu",
+  Dpmpp2m: "dpmpp_2m",
+  Dpmpp2mCfgPp: "dpmpp_2m_cfg_pp",
+  Dpmpp2mSde: "dpmpp_2m_sde",
+  Dpmpp2mSdeGpu: "dpmpp_2m_sde_gpu",
+  Dpmpp2mSdeHeun: "dpmpp_2m_sde_heun",
+  Dpmpp2mSdeHeunGpu: "dpmpp_2m_sde_heun_gpu",
+  Dpmpp3mSde: "dpmpp_3m_sde",
+  Dpmpp3mSdeGpu: "dpmpp_3m_sde_gpu",
+  Ddpm: "ddpm",
+  Lcm: "lcm",
+  Ipndm: "ipndm",
+  IpndmV: "ipndm_v",
+  Deis: "deis",
+  CfgppUd10Ab: "cfgpp_ud10_ab",
+  ResMultistep: "res_multistep",
+  ResMultistepCfgPp: "res_multistep_cfg_pp",
+  ResMultistepAncestral: "res_multistep_ancestral",
+  ResMultistepAncestralCfgPp: "res_multistep_ancestral_cfg_pp",
+  GradientEstimation: "gradient_estimation",
+  GradientEstimationCfgPp: "gradient_estimation_cfg_pp",
+  ErSde: "er_sde",
+  Seeds2: "seeds_2",
+  Seeds3: "seeds_3",
+  SaSolver: "sa_solver",
+  SaSolverPece: "sa_solver_pece",
+  Ddim: "ddim",
+  UniPc: "uni_pc",
+  UniPcBh2: "uni_pc_bh2",
+} as const;
 
-export type SchedulerName = (typeof SCHEDULER_NAMES)[number];
+export type Sampler = (typeof Sampler)[keyof typeof Sampler];
+
+export const SAMPLER_NAMES: Sampler[] = values(Sampler);
+
+/** Schedulers du `KSampler`. La valeur est la chaîne envoyée à ComfyUI. */
+export const Scheduler = {
+  Simple: "simple",
+  SgmUniform: "sgm_uniform",
+  Karras: "karras",
+  Exponential: "exponential",
+  DdimUniform: "ddim_uniform",
+  Beta: "beta",
+  Normal: "normal",
+  LinearQuadratic: "linear_quadratic",
+  KlOptimal: "kl_optimal",
+} as const;
+
+export type Scheduler = (typeof Scheduler)[keyof typeof Scheduler];
+
+export const SCHEDULER_NAMES: Scheduler[] = values(Scheduler);
 
 export const QWEN_IMAGE_DEFAULTS = {
   unetName: "qwen_image_2.1_int8_convrot.safetensors",
-  aspectRatio: "4:3 (Standard)",
-  samplerName: "euler",
+  aspectRatio: Aspect.Standard,
+  samplerName: Sampler.Euler,
   seed: 0,
   steps: 25,
-  scheduler: "simple",
+  scheduler: Scheduler.Simple,
 } as const satisfies {
   unetName: string;
-  aspectRatio: AspectRatio;
-  samplerName: SamplerName;
+  aspectRatio: Aspect;
+  samplerName: Sampler;
   seed: number;
   steps: number;
-  scheduler: SchedulerName;
+  scheduler: Scheduler;
 };
 
 export type QwenImageOptions = {
   prompt: string;
   negativePrompt: string;
   unetName: string;
-  aspectRatio: AspectRatio;
-  samplerName: SamplerName;
+  aspectRatio: Aspect;
+  samplerName: Sampler;
   seed: number;
   steps: number;
-  scheduler: SchedulerName;
+  scheduler: Scheduler;
 };
 
 /**
