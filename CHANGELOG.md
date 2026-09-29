@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0 — 2026-09-29
+
+`deleteFromServer` retire l'image de l'historique (`POST /history`) puis le prompt de la file (`POST /queue`), tous deux avec `{ delete: [promptId] }`. `clearHistory` reste l'appel qui vide tout l'historique.
+
 ## 0.6.0 — 2026-09-29
 
 `clearHistory` vide l'historique des prompts terminés (`POST /history` avec `{ clear: true }`). La file en attente et le prompt en cours d'exécution ne sont pas touchés. Ce n'est pas une option de `generateQwenImage` : un appel groupé effacerait l'historique des autres générations encore en cours.

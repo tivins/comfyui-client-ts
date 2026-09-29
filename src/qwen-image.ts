@@ -27,7 +27,7 @@ type HistoryEntry = {
 export type GenerateSettings = {
   server?: string;
   outputDir?: string;
-  /** Après téléchargement, retire le prompt de l'historique ComfyUI. Le fichier dans `output/` reste. */
+  /** Après téléchargement, retire l'image de l'historique et le prompt de la file. Le fichier dans `output/` reste. */
   deleteFromServer?: boolean;
 };
 
@@ -98,15 +98,20 @@ export async function clearHistory(server: string = DEFAULT_SERVER): Promise<voi
   }
 }
 
-async function deleteFromServer(base: string, promptId: string): Promise<void> {
-  const response = await fetch(`${base}/history`, {
+async function postDelete(base: string, path: "history" | "queue", promptId: string): Promise<void> {
+  const response = await fetch(`${base}/${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ delete: [promptId] }),
   });
   if (!response.ok) {
-    throw new Error(`POST /history (delete ${promptId}) a répondu ${response.status}`);
+    throw new Error(`POST /${path} (delete ${promptId}) a répondu ${response.status}`);
   }
+}
+
+async function deleteFromServer(base: string, promptId: string): Promise<void> {
+  await postDelete(base, "history", promptId);
+  await postDelete(base, "queue", promptId);
 }
 
 async function downloadImage(base: string, image: HistoryImage, directory: string): Promise<string> {

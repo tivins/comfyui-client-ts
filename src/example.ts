@@ -20,7 +20,7 @@ const settings: GenerateSettings = {
 
 const prompts = [
     {
-        prompt: "a young dog running in a grass field, daylight",
+        prompt: "an old dog running in a grass field, daylight",
         negativePrompt: "blur,bad quality",
     },
 ];
@@ -40,5 +40,5 @@ if (import.meta.main) {
             console.log("paths=", paths);
         }).catch(catcher);
     })
-    clearHistory(settings.server);
+    // clearHistory(settings.server);
 }

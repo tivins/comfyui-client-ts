@@ -63,7 +63,7 @@ describe("generateQwenImage", () => {
     expect(await Bun.file(paths[0]!).bytes()).toEqual(new Uint8Array([1, 2, 3]));
   });
 
-  test("retire le prompt de l'historique après le téléchargement", async () => {
+  test("retire l'image de l'historique et le prompt de la file", async () => {
     const outputDir = await mkdtemp(join(tmpdir(), "qwen-image-"));
     directories.push(outputDir);
     const calls: string[] = [];
@@ -85,7 +85,7 @@ describe("generateQwenImage", () => {
       if (url.startsWith("http://127.0.0.1:9/view?")) {
         return new Response(new Uint8Array([1]));
       }
-      if (url.endsWith("/history") && init?.method === "POST") {
+      if ((url.endsWith("/history") || url.endsWith("/queue")) && init?.method === "POST") {
         expect(JSON.parse(String(init.body))).toEqual({ delete: ["abc"] });
         return new Response(null, { status: 200 });
       }
@@ -99,9 +99,11 @@ describe("generateQwenImage", () => {
     });
 
     const view = calls.findIndex((call) => call.startsWith("GET http://127.0.0.1:9/view?"));
-    const deleted = calls.findIndex((call) => call === "POST http://127.0.0.1:9/history");
+    const history = calls.findIndex((call) => call === "POST http://127.0.0.1:9/history");
+    const queue = calls.findIndex((call) => call === "POST http://127.0.0.1:9/queue");
     expect(view).toBeGreaterThan(-1);
-    expect(deleted).toBeGreaterThan(view);
+    expect(history).toBeGreaterThan(view);
+    expect(queue).toBeGreaterThan(history);
   });
 
   test("laisse l'historique en place sans deleteFromServer", async () => {
@@ -130,6 +132,7 @@ describe("generateQwenImage", () => {
     await generateQwenImage(baseOptions, { server: "http://127.0.0.1:9", outputDir });
     expect(calls.some((call) => call.startsWith("POST "))).toBe(true);
     expect(calls.some((call) => call === "POST http://127.0.0.1:9/history")).toBe(false);
+    expect(calls.some((call) => call === "POST http://127.0.0.1:9/queue")).toBe(false);
   });
 
   test("remonte le refus de ComfyUI", async () => {
