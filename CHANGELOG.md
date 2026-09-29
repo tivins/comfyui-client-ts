@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 — 2026-09-29
+
+`clearHistory` vide l'historique des prompts terminés (`POST /history` avec `{ clear: true }`). La file en attente et le prompt en cours d'exécution ne sont pas touchés. Ce n'est pas une option de `generateQwenImage` : un appel groupé effacerait l'historique des autres générations encore en cours.
+
+## 0.5.0 — 2026-09-29
+
+`GenerateSettings.deleteFromServer` retire le prompt de l'historique ComfyUI (`POST /history`) une fois les images téléchargées. Le fichier dans le dossier `output` du serveur n'est pas effacé : cette version de ComfyUI n'expose pas d'endpoint pour ça.
+
 ## 0.4.0 — 2026-09-29
 
 `Aspect`, `Sampler` et `Scheduler` sont des objets de littéraux : `Sampler.Euler` vaut `"euler"`. L'autocomplétion se fait sur le membre, et ComfyUI reçoit la même chaîne qu'avant. Les listes du CLI sont dérivées de ces objets.

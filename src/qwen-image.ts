@@ -27,6 +27,8 @@ type HistoryEntry = {
 export type GenerateSettings = {
   server?: string;
   outputDir?: string;
+  /** Après téléchargement, retire le prompt de l'historique ComfyUI. Le fichier dans `output/` reste. */
+  deleteFromServer?: boolean;
 };
 
 async function queuePrompt(base: string, prompt: ReturnType<typeof buildQwenImagePrompt>): Promise<string> {
@@ -83,6 +85,30 @@ function collectImages(entry: HistoryEntry): HistoryImage[] {
   return images;
 }
 
+/** Vide l'historique des prompts terminés. La file en attente et le prompt en cours restent. */
+export async function clearHistory(server: string = DEFAULT_SERVER): Promise<void> {
+  const base = server.replace(/\/$/, "");
+  const response = await fetch(`${base}/history`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ clear: true }),
+  });
+  if (!response.ok) {
+    throw new Error(`POST /history (clear) a répondu ${response.status}`);
+  }
+}
+
+async function deleteFromServer(base: string, promptId: string): Promise<void> {
+  const response = await fetch(`${base}/history`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ delete: [promptId] }),
+  });
+  if (!response.ok) {
+    throw new Error(`POST /history (delete ${promptId}) a répondu ${response.status}`);
+  }
+}
+
 async function downloadImage(base: string, image: HistoryImage, directory: string): Promise<string> {
   const query = new URLSearchParams({
     filename: image.filename,
@@ -136,5 +162,11 @@ export async function generateQwenImage(
     console.log(path);
     paths.push(path);
   }
+
+  if (settings.deleteFromServer) {
+    await deleteFromServer(base, promptId);
+    console.log(`retiré de ComfyUI : ${promptId}`);
+  }
+
   return paths;
 }

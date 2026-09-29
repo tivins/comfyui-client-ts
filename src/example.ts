@@ -1,4 +1,4 @@
-import {generateQwenImage, GenerateSettings} from "./qwen-image.ts";
+import {clearHistory, generateQwenImage, GenerateSettings} from "./qwen-image.ts";
 import {Aspect, Sampler, Scheduler, type QwenImageOptions} from "./workflow.ts";
 
 let options: QwenImageOptions = {
@@ -14,12 +14,13 @@ let options: QwenImageOptions = {
 
 const settings: GenerateSettings = {
     server: "http://127.0.0.1:8188",
-    outputDir: "/tmp/comfy/out"
+    outputDir: "/tmp/comfy/out",
+    deleteFromServer: true,
 };
 
 const prompts = [
     {
-        prompt: "a young dog walking on a table, daylight",
+        prompt: "a young dog running in a grass field, daylight",
         negativePrompt: "blur,bad quality",
     },
 ];
@@ -35,6 +36,9 @@ if (import.meta.main) {
         options.prompt = p.prompt;
         options.negativePrompt = p.negativePrompt;
 
-        generateQwenImage(options, settings).catch(catcher);
+        generateQwenImage(options, settings).then(paths => {
+            console.log("paths=", paths);
+        }).catch(catcher);
     })
+    clearHistory(settings.server);
 }

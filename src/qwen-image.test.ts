@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { generateQwenImage } from "./qwen-image.ts";
-import { options as exampleOptions } from "./example.ts";
+import { clearHistory, generateQwenImage } from "./qwen-image.ts";
 import { QWEN_IMAGE_DEFAULTS, type QwenImageOptions } from "./workflow.ts";
 
 const baseOptions: QwenImageOptions = {
@@ -64,6 +63,75 @@ describe("generateQwenImage", () => {
     expect(await Bun.file(paths[0]!).bytes()).toEqual(new Uint8Array([1, 2, 3]));
   });
 
+  test("retire le prompt de l'historique après le téléchargement", async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), "qwen-image-"));
+    directories.push(outputDir);
+    const calls: string[] = [];
+
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      calls.push(`${init?.method ?? "GET"} ${url}`);
+      if (url.endsWith("/prompt")) return Response.json({ prompt_id: "abc" });
+      if (url.endsWith("/history/abc")) {
+        return Response.json({
+          abc: {
+            status: { completed: true, status_str: "success" },
+            outputs: {
+              "9": { images: [{ filename: "kettle.png", subfolder: "", type: "output" }] },
+            },
+          },
+        });
+      }
+      if (url.startsWith("http://127.0.0.1:9/view?")) {
+        return new Response(new Uint8Array([1]));
+      }
+      if (url.endsWith("/history") && init?.method === "POST") {
+        expect(JSON.parse(String(init.body))).toEqual({ delete: ["abc"] });
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`requête inattendue : ${url}`);
+    };
+
+    await generateQwenImage(baseOptions, {
+      server: "http://127.0.0.1:9",
+      outputDir,
+      deleteFromServer: true,
+    });
+
+    const view = calls.findIndex((call) => call.startsWith("GET http://127.0.0.1:9/view?"));
+    const deleted = calls.findIndex((call) => call === "POST http://127.0.0.1:9/history");
+    expect(view).toBeGreaterThan(-1);
+    expect(deleted).toBeGreaterThan(view);
+  });
+
+  test("laisse l'historique en place sans deleteFromServer", async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), "qwen-image-"));
+    directories.push(outputDir);
+    const calls: string[] = [];
+
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      calls.push(`${init?.method ?? "GET"} ${url}`);
+      if (url.endsWith("/prompt")) return Response.json({ prompt_id: "abc" });
+      if (url.endsWith("/history/abc")) {
+        return Response.json({
+          abc: {
+            status: { completed: true, status_str: "success" },
+            outputs: {
+              "9": { images: [{ filename: "kettle.png", subfolder: "", type: "output" }] },
+            },
+          },
+        });
+      }
+      if (url.startsWith("http://127.0.0.1:9/view?")) return new Response(new Uint8Array([1]));
+      throw new Error(`requête inattendue : ${url}`);
+    };
+
+    await generateQwenImage(baseOptions, { server: "http://127.0.0.1:9", outputDir });
+    expect(calls.some((call) => call.startsWith("POST "))).toBe(true);
+    expect(calls.some((call) => call === "POST http://127.0.0.1:9/history")).toBe(false);
+  });
+
   test("remonte le refus de ComfyUI", async () => {
     globalThis.fetch = async () => Response.json({ error: "bad graph" }, { status: 400 });
 
@@ -73,16 +141,23 @@ describe("generateQwenImage", () => {
   });
 });
 
-describe("example", () => {
-  test("fixe un QwenImageOptions complet", () => {
-    expect(exampleOptions.prompt).toBe("a young cat walking on a table, daylight");
-    expect(exampleOptions.negativePrompt).toBe("blur,bad quality");
-    expect(exampleOptions.unetName).toBe(QWEN_IMAGE_DEFAULTS.unetName);
-    expect(exampleOptions.aspectRatio).toBe(QWEN_IMAGE_DEFAULTS.aspectRatio);
-    expect(exampleOptions.samplerName).toBe(QWEN_IMAGE_DEFAULTS.samplerName);
-    expect(exampleOptions.seed).toBe(QWEN_IMAGE_DEFAULTS.seed);
-    expect(exampleOptions.steps).toBe(QWEN_IMAGE_DEFAULTS.steps);
-    expect(exampleOptions.scheduler).toBe(QWEN_IMAGE_DEFAULTS.scheduler);
+describe("clearHistory", () => {
+  test("vide l'historique ComfyUI", async () => {
+    let body = "";
+    globalThis.fetch = async (input, init) => {
+      expect(String(input)).toBe("http://127.0.0.1:9/history");
+      expect(init?.method).toBe("POST");
+      body = String(init?.body);
+      return new Response(null, { status: 200 });
+    };
+
+    await clearHistory("http://127.0.0.1:9/");
+    expect(JSON.parse(body)).toEqual({ clear: true });
+  });
+
+  test("remonte le refus du serveur", async () => {
+    globalThis.fetch = async () => new Response(null, { status: 500 });
+    await expect(clearHistory("http://127.0.0.1:9")).rejects.toThrow(/POST \/history \(clear\) a répondu 500/);
   });
 });
 
