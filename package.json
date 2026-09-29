@@ -1,8 +1,11 @@
 {
   "name": "comfyui-client",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "generate": "bun src/generate.ts",
     "example": "bun src/example.ts",

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0 — 2026-09-29
+
+`package.json` expose `"."` vers `src/index.ts`. Un autre projet Bun peut dépendre de `comfyui-client` avec `"file:../client-ts"` et importer `generateQwenImage`, `clearHistory` et les réglages du workflow depuis `"comfyui-client"`. `client-ts-example` montre cet appel.
+
 ## 0.7.0 — 2026-09-29
 
 `deleteFromServer` retire l'image de l'historique (`POST /history`) puis le prompt de la file (`POST /queue`), tous deux avec `{ delete: [promptId] }`. `clearHistory` reste l'appel qui vide tout l'historique.
