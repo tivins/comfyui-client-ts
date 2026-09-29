@@ -10,9 +10,108 @@ export type ApiNode = {
 
 export type ApiPrompt = Record<string, ApiNode>;
 
+export const ASPECT_RATIOS = [
+  "1:1 (Square)",
+  "2:3 (Portrait Photo)",
+  "3:2 (Photo)",
+  "3:4 (Portrait Standard)",
+  "4:3 (Standard)",
+  "9:16 (Portrait Widescreen)",
+  "16:9 (Widescreen)",
+  "21:9 (Ultrawide)",
+] as const;
+
+export type AspectRatio = (typeof ASPECT_RATIOS)[number];
+
+export const SAMPLER_NAMES = [
+  "euler",
+  "euler_cfg_pp",
+  "euler_ancestral",
+  "euler_ancestral_cfg_pp",
+  "heun",
+  "heunpp2",
+  "exp_heun_2_x0",
+  "exp_heun_2_x0_sde",
+  "dpm_2",
+  "dpm_2_ancestral",
+  "lms",
+  "dpm_fast",
+  "dpm_adaptive",
+  "dpmpp_2s_ancestral",
+  "dpmpp_2s_ancestral_cfg_pp",
+  "dpmpp_sde",
+  "dpmpp_sde_gpu",
+  "dpmpp_2m",
+  "dpmpp_2m_cfg_pp",
+  "dpmpp_2m_sde",
+  "dpmpp_2m_sde_gpu",
+  "dpmpp_2m_sde_heun",
+  "dpmpp_2m_sde_heun_gpu",
+  "dpmpp_3m_sde",
+  "dpmpp_3m_sde_gpu",
+  "ddpm",
+  "lcm",
+  "ipndm",
+  "ipndm_v",
+  "deis",
+  "cfgpp_ud10_ab",
+  "res_multistep",
+  "res_multistep_cfg_pp",
+  "res_multistep_ancestral",
+  "res_multistep_ancestral_cfg_pp",
+  "gradient_estimation",
+  "gradient_estimation_cfg_pp",
+  "er_sde",
+  "seeds_2",
+  "seeds_3",
+  "sa_solver",
+  "sa_solver_pece",
+  "ddim",
+  "uni_pc",
+  "uni_pc_bh2",
+] as const;
+
+export type SamplerName = (typeof SAMPLER_NAMES)[number];
+
+export const SCHEDULER_NAMES = [
+  "simple",
+  "sgm_uniform",
+  "karras",
+  "exponential",
+  "ddim_uniform",
+  "beta",
+  "normal",
+  "linear_quadratic",
+  "kl_optimal",
+] as const;
+
+export type SchedulerName = (typeof SCHEDULER_NAMES)[number];
+
+export const QWEN_IMAGE_DEFAULTS = {
+  unetName: "qwen_image_2.1_int8_convrot.safetensors",
+  aspectRatio: "4:3 (Standard)",
+  samplerName: "euler",
+  seed: 0,
+  steps: 25,
+  scheduler: "simple",
+} as const satisfies {
+  unetName: string;
+  aspectRatio: AspectRatio;
+  samplerName: SamplerName;
+  seed: number;
+  steps: number;
+  scheduler: SchedulerName;
+};
+
 export type QwenImageOptions = {
   prompt: string;
   negativePrompt: string;
+  unetName: string;
+  aspectRatio: AspectRatio;
+  samplerName: SamplerName;
+  seed: number;
+  steps: number;
+  scheduler: SchedulerName;
 };
 
 /**
@@ -34,7 +133,7 @@ export function buildQwenImagePrompt(options: QwenImageOptions): ApiPrompt {
     "13": {
       class_type: "ResolutionSelector",
       inputs: {
-        aspect_ratio: "4:3 (Standard)",
+        aspect_ratio: options.aspectRatio,
         megapixels: 1,
         multiple: 8,
       },
@@ -42,7 +141,7 @@ export function buildQwenImagePrompt(options: QwenImageOptions): ApiPrompt {
     "483": {
       class_type: "UNETLoader",
       inputs: {
-        unet_name: "qwen_image_2.1_int8_convrot.safetensors",
+        unet_name: options.unetName,
         weight_dtype: "default",
       },
     },
@@ -92,11 +191,11 @@ export function buildQwenImagePrompt(options: QwenImageOptions): ApiPrompt {
         positive: ["484", 0],
         negative: ["484", 1],
         latent_image: ["487", 0],
-        seed: 0,
-        steps: 25,
+        seed: options.seed,
+        steps: options.steps,
         cfg: 1,
-        sampler_name: "euler",
-        scheduler: "simple",
+        sampler_name: options.samplerName,
+        scheduler: options.scheduler,
         denoise: 1,
       },
     },

@@ -2,7 +2,14 @@ import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildQwenImagePrompt } from "./workflow.ts";
+import {
+  ASPECT_RATIOS,
+  QWEN_IMAGE_DEFAULTS,
+  SAMPLER_NAMES,
+  SCHEDULER_NAMES,
+  buildQwenImagePrompt,
+  type QwenImageOptions,
+} from "./workflow.ts";
 
 const DEFAULT_PROMPT = "a young cat walking on a table, daylight";
 const DEFAULT_NEGATIVE = "blur,bad quality";
@@ -25,18 +32,60 @@ type HistoryEntry = {
   };
 };
 
-function flag(name: string): string | undefined {
-  const index = process.argv.indexOf(`--${name}`);
+function readFlag(argv: readonly string[], name: string): string | undefined {
+  const index = argv.indexOf(`--${name}`);
   if (index === -1) return undefined;
-  const value = process.argv[index + 1];
+  const value = argv[index + 1];
   if (value === undefined || value.startsWith("--")) {
     throw new Error(`--${name} attend une valeur`);
   }
   return value;
 }
 
-function serverBase(): string {
-  return (flag("server") ?? process.env.COMFY_URL ?? DEFAULT_SERVER).replace(/\/$/, "");
+function choiceFlag<T extends string>(
+  argv: readonly string[],
+  name: string,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  const raw = readFlag(argv, name);
+  if (raw === undefined) return fallback;
+  if (!(allowed as readonly string[]).includes(raw)) {
+    throw new Error(`--${name} inconnu : ${raw}. Valeurs : ${allowed.join(", ")}`);
+  }
+  return raw as T;
+}
+
+function intFlag(argv: readonly string[], name: string, fallback: number, min: number): number {
+  const raw = readFlag(argv, name);
+  if (raw === undefined) return fallback;
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`--${name} doit être un entier >= ${min}`);
+  }
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < min) {
+    throw new Error(`--${name} doit être un entier >= ${min}`);
+  }
+  return value;
+}
+
+export function parseGenerateArgs(
+  argv: readonly string[],
+  env: { PROMPT?: string; NEGATIVE_PROMPT?: string; COMFY_URL?: string } = {},
+): { server: string; options: QwenImageOptions } {
+  return {
+    server: (readFlag(argv, "server") ?? env.COMFY_URL ?? DEFAULT_SERVER).replace(/\/$/, ""),
+    options: {
+      prompt: readFlag(argv, "prompt") ?? env.PROMPT ?? DEFAULT_PROMPT,
+      negativePrompt: readFlag(argv, "negative") ?? env.NEGATIVE_PROMPT ?? DEFAULT_NEGATIVE,
+      unetName: readFlag(argv, "unet") ?? QWEN_IMAGE_DEFAULTS.unetName,
+      aspectRatio: choiceFlag(argv, "aspect", ASPECT_RATIOS, QWEN_IMAGE_DEFAULTS.aspectRatio),
+      samplerName: choiceFlag(argv, "sampler", SAMPLER_NAMES, QWEN_IMAGE_DEFAULTS.samplerName),
+      seed: intFlag(argv, "seed", QWEN_IMAGE_DEFAULTS.seed, 0),
+      steps: intFlag(argv, "steps", QWEN_IMAGE_DEFAULTS.steps, 1),
+      scheduler: choiceFlag(argv, "scheduler", SCHEDULER_NAMES, QWEN_IMAGE_DEFAULTS.scheduler),
+    },
+  };
 }
 
 async function queuePrompt(base: string, prompt: ReturnType<typeof buildQwenImagePrompt>): Promise<string> {
@@ -109,15 +158,18 @@ async function downloadImage(base: string, image: HistoryImage, directory: strin
 }
 
 async function main(): Promise<void> {
-  const prompt = flag("prompt") ?? process.env.PROMPT ?? DEFAULT_PROMPT;
-  const negativePrompt = flag("negative") ?? process.env.NEGATIVE_PROMPT ?? DEFAULT_NEGATIVE;
-  const base = serverBase();
+  const { server: base, options } = parseGenerateArgs(process.argv, process.env);
   const outputDir = join(dirname(fileURLToPath(import.meta.url)), "..", "output");
 
-  const graph = buildQwenImagePrompt({ prompt, negativePrompt });
+  const graph = buildQwenImagePrompt(options);
   console.log(`serveur ${base}`);
-  console.log(`prompt : ${prompt}`);
-  console.log(`négatif : ${negativePrompt}`);
+  console.log(`prompt : ${options.prompt}`);
+  console.log(`négatif : ${options.negativePrompt}`);
+  console.log(`unet : ${options.unetName}`);
+  console.log(`ratio : ${options.aspectRatio}`);
+  console.log(
+    `sampler : ${options.samplerName} / ${options.scheduler}, seed ${options.seed}, ${options.steps} steps`,
+  );
 
   const promptId = await queuePrompt(base, graph);
   console.log(`en file : ${promptId}`);
