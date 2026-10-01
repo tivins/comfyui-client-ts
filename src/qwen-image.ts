@@ -124,7 +124,7 @@ async function downloadImage(base: string, image: HistoryImage, directory: strin
   if (!response.ok) {
     throw new Error(`GET /view ${image.filename} a répondu ${response.status}`);
   }
-  const target = join(directory, image.filename);
+  const target = join(directory, Date.now() + '-' + image.filename);
   await Bun.write(target, await response.bytes());
   return target;
 }
