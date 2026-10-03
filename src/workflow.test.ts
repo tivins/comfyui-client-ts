@@ -3,10 +3,13 @@ import { describe, expect, test } from "bun:test";
 import { parseGenerateArgs } from "./generate.ts";
 import {
   Aspect,
+  KREA2_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
   Sampler,
   Scheduler,
+  buildKrea2Prompt,
   buildQwenImagePrompt,
+  type Krea2Options,
   type QwenImageOptions,
 } from "./workflow.ts";
 
@@ -73,6 +76,82 @@ describe("buildQwenImagePrompt", () => {
     expect(graph["489"]?.inputs.seed).toBe(0);
     expect(graph["489"]?.inputs.cfg).toBe(1);
     expect(graph["461"]?.inputs["format.bit_depth"]).toBe("8-bit");
+  });
+});
+
+const kreaOptions: Krea2Options = {
+  prompt: "a red kettle",
+  negativePrompt: "blur",
+  unetName: KREA2_DEFAULTS.unetName,
+  width: KREA2_DEFAULTS.width,
+  height: KREA2_DEFAULTS.height,
+  samplerName: KREA2_DEFAULTS.samplerName,
+  seed: KREA2_DEFAULTS.seed,
+  steps: KREA2_DEFAULTS.steps,
+  cfg: KREA2_DEFAULTS.cfg,
+  scheduler: KREA2_DEFAULTS.scheduler,
+};
+
+describe("buildKrea2Prompt", () => {
+  test("place le prompt et le négatif sur deux CLIPTextEncode", () => {
+    const graph = buildKrea2Prompt(kreaOptions);
+
+    expect(graph["8"]?.class_type).toBe("CLIPTextEncode");
+    expect(graph["8"]?.inputs.text).toBe("a red kettle");
+    expect(graph["8"]?.inputs.clip).toEqual(["7", 0]);
+    expect(graph["9"]?.inputs.text).toBe("blur");
+    expect(graph["9"]?.inputs.clip).toEqual(["7", 0]);
+    expect(graph["7"]?.inputs.type).toBe("krea2");
+    expect(graph["7"]?.inputs.clip_name).toBe("qwen3vl_4b_fp8_scaled.safetensors");
+  });
+
+  test("reprend le modèle, la taille et le sampler de l'exemple", () => {
+    const graph = buildKrea2Prompt({
+      ...kreaOptions,
+      unetName: "other.safetensors",
+      width: 768,
+      height: 1024,
+      samplerName: "dpmpp_2m",
+      seed: 7,
+      steps: 20,
+      cfg: 2,
+      scheduler: "beta",
+    });
+
+    expect(graph["1"]?.inputs.unet_name).toBe("other.safetensors");
+    expect(graph["1"]?.inputs.weight_dtype).toBe("default");
+    expect(graph["5"]?.inputs.vae_name).toBe("qwen_image_vae.safetensors");
+    expect(graph["11"]?.inputs.width).toBe(768);
+    expect(graph["11"]?.inputs.height).toBe(1024);
+    expect(graph["11"]?.inputs.batch_size).toBe(1);
+    expect(graph["2"]?.inputs.model).toEqual(["1", 0]);
+    expect(graph["2"]?.inputs.positive).toEqual(["8", 0]);
+    expect(graph["2"]?.inputs.negative).toEqual(["9", 0]);
+    expect(graph["2"]?.inputs.latent_image).toEqual(["11", 0]);
+    expect(graph["2"]?.inputs.sampler_name).toBe("dpmpp_2m");
+    expect(graph["2"]?.inputs.seed).toBe(7);
+    expect(graph["2"]?.inputs.steps).toBe(20);
+    expect(graph["2"]?.inputs.cfg).toBe(2);
+    expect(graph["2"]?.inputs.scheduler).toBe("beta");
+    expect(graph["2"]?.inputs.denoise).toBe(1);
+    expect(graph["3"]?.inputs.samples).toEqual(["2", 0]);
+    expect(graph["3"]?.inputs.vae).toEqual(["5", 0]);
+    expect(graph["4"]?.inputs.images).toEqual(["3", 0]);
+    expect(graph["4"]?.inputs.filename_prefix).toBe("Krea2");
+  });
+
+  test("garde les défauts du workflow krea2_safetensor", () => {
+    const graph = buildKrea2Prompt(kreaOptions);
+
+    expect(graph["1"]?.inputs.unet_name).toBe("museByStableYogi_v35Int8Extended.safetensors");
+    expect(graph["11"]?.inputs.width).toBe(960);
+    expect(graph["11"]?.inputs.height).toBe(1472);
+    expect(graph["2"]?.inputs.seed).toBe(42);
+    expect(graph["2"]?.inputs.steps).toBe(16);
+    expect(graph["2"]?.inputs.cfg).toBe(1.5);
+    expect(graph["2"]?.inputs.sampler_name).toBe("euler");
+    expect(graph["2"]?.inputs.scheduler).toBe("simple");
+    expect(graph["2"]?.inputs).not.toHaveProperty("control_after_generate");
   });
 });
 

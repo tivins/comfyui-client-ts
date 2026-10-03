@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0 — 2026-10-02
+
+`buildKrea2Prompt` reprend le graphe UI `krea2_safetensor` : UNET Muse int8, CLIP `qwen3vl_4b` en type `krea2`, VAE `qwen_image_vae`, deux `CLIPTextEncode`, latent 960×1472, `KSampler` euler / simple / 16 pas / cfg 1.5. `generateKrea2` envoie ce graphe avec les mêmes réglages de serveur que `generateQwenImage`.
+
 ## 0.8.1 — 2026-09-29
 
 `README.md` décrit l'installation en dépendance `file:`, l'appel `generateQwenImage`, `clearHistory`, et les options du script `bun generate`.

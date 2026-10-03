@@ -231,3 +231,120 @@ export function buildQwenImagePrompt(options: QwenImageOptions): ApiPrompt {
     },
   };
 }
+
+export const KREA2_DEFAULTS = {
+  unetName: "museByStableYogi_v35Int8Extended.safetensors",
+  width: 960,
+  height: 1472,
+  samplerName: Sampler.Euler,
+  seed: 42,
+  steps: 16,
+  cfg: 1.5,
+  scheduler: Scheduler.Simple,
+} as const satisfies {
+  unetName: string;
+  width: number;
+  height: number;
+  samplerName: Sampler;
+  seed: number;
+  steps: number;
+  cfg: number;
+  scheduler: Scheduler;
+};
+
+export type Krea2Options = {
+  prompt: string;
+  negativePrompt: string;
+  unetName: string;
+  width: number;
+  height: number;
+  samplerName: Sampler;
+  seed: number;
+  steps: number;
+  cfg: number;
+  scheduler: Scheduler;
+};
+
+/**
+ * Graphe API du workflow UI `krea2_safetensor`.
+ *
+ * Deux `CLIPTextEncode` : le nœud 8 porte le prompt, le nœud 9 le négatif.
+ * Le CLIP est chargé en type `krea2`. Largeur et hauteur sont fixes
+ * (pas de `ResolutionSelector`). `cfg` vaut 1.5 dans l'exemple qui tourne.
+ */
+export function buildKrea2Prompt(options: Krea2Options): ApiPrompt {
+  return {
+    "1": {
+      class_type: "UNETLoader",
+      inputs: {
+        unet_name: options.unetName,
+        weight_dtype: "default",
+      },
+    },
+    "7": {
+      class_type: "CLIPLoader",
+      inputs: {
+        clip_name: "qwen3vl_4b_fp8_scaled.safetensors",
+        type: "krea2",
+        device: "default",
+      },
+    },
+    "5": {
+      class_type: "VAELoader",
+      inputs: {
+        vae_name: "qwen_image_vae.safetensors",
+      },
+    },
+    "8": {
+      class_type: "CLIPTextEncode",
+      inputs: {
+        clip: ["7", 0],
+        text: options.prompt,
+      },
+    },
+    "9": {
+      class_type: "CLIPTextEncode",
+      inputs: {
+        clip: ["7", 0],
+        text: options.negativePrompt,
+      },
+    },
+    "11": {
+      class_type: "EmptyLatentImage",
+      inputs: {
+        width: options.width,
+        height: options.height,
+        batch_size: 1,
+      },
+    },
+    "2": {
+      class_type: "KSampler",
+      inputs: {
+        model: ["1", 0],
+        positive: ["8", 0],
+        negative: ["9", 0],
+        latent_image: ["11", 0],
+        seed: options.seed,
+        steps: options.steps,
+        cfg: options.cfg,
+        sampler_name: options.samplerName,
+        scheduler: options.scheduler,
+        denoise: 1,
+      },
+    },
+    "3": {
+      class_type: "VAEDecode",
+      inputs: {
+        samples: ["2", 0],
+        vae: ["5", 0],
+      },
+    },
+    "4": {
+      class_type: "SaveImage",
+      inputs: {
+        images: ["3", 0],
+        filename_prefix: "Krea2",
+      },
+    },
+  };
+}

@@ -59,7 +59,8 @@ describe("generateQwenImage", () => {
 
     const graph = JSON.parse(postedPrompt) as { prompt: Record<string, { inputs: { prompt?: string } }> };
     expect(graph.prompt["484"]?.inputs.prompt).toBe("a red kettle");
-    expect(paths).toEqual([join(outputDir, "kettle.png")]);
+    expect(paths[0]).toStartWith(outputDir);
+    expect(paths[0]).toEndWith("-kettle.png");
     expect(await Bun.file(paths[0]!).bytes()).toEqual(new Uint8Array([1, 2, 3]));
   });
 

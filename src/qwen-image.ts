@@ -2,7 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildQwenImagePrompt, type QwenImageOptions } from "./workflow.ts";
+import { buildQwenImagePrompt, type ApiPrompt, type QwenImageOptions } from "./workflow.ts";
 
 export const DEFAULT_SERVER = "http://127.0.0.1:8188";
 
@@ -31,7 +31,7 @@ export type GenerateSettings = {
   deleteFromServer?: boolean;
 };
 
-async function queuePrompt(base: string, prompt: ReturnType<typeof buildQwenImagePrompt>): Promise<string> {
+async function queuePrompt(base: string, prompt: ApiPrompt): Promise<string> {
   const response = await fetch(`${base}/prompt`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -129,27 +129,13 @@ async function downloadImage(base: string, image: HistoryImage, directory: strin
   return target;
 }
 
-/**
- * Envoie le graphe Qwen, attend la fin, et enregistre les images.
- * `server` et `outputDir` ne font pas partie des options d'image.
- */
-export async function generateQwenImage(
-  options: QwenImageOptions,
-  settings: GenerateSettings = {},
+export async function runGraph(
+  graph: ApiPrompt,
+  settings: GenerateSettings,
 ): Promise<string[]> {
   const base = (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
   const outputDir =
     settings.outputDir ?? join(dirname(fileURLToPath(import.meta.url)), "..", "output");
-
-  const graph = buildQwenImagePrompt(options);
-  console.log(`serveur ${base}`);
-  console.log(`prompt : ${options.prompt}`);
-  console.log(`négatif : ${options.negativePrompt}`);
-  console.log(`unet : ${options.unetName}`);
-  console.log(`ratio : ${options.aspectRatio}`);
-  console.log(
-    `sampler : ${options.samplerName} / ${options.scheduler}, seed ${options.seed}, ${options.steps} steps`,
-  );
 
   const promptId = await queuePrompt(base, graph);
   console.log(`en file : ${promptId}`);
@@ -174,4 +160,25 @@ export async function generateQwenImage(
   }
 
   return paths;
+}
+
+/**
+ * Envoie le graphe Qwen, attend la fin, et enregistre les images.
+ * `server` et `outputDir` ne font pas partie des options d'image.
+ */
+export async function generateQwenImage(
+  options: QwenImageOptions,
+  settings: GenerateSettings = {},
+): Promise<string[]> {
+  const base = (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
+  const graph = buildQwenImagePrompt(options);
+  console.log(`serveur ${base}`);
+  console.log(`prompt : ${options.prompt}`);
+  console.log(`négatif : ${options.negativePrompt}`);
+  console.log(`unet : ${options.unetName}`);
+  console.log(`ratio : ${options.aspectRatio}`);
+  console.log(
+    `sampler : ${options.samplerName} / ${options.scheduler}, seed ${options.seed}, ${options.steps} steps`,
+  );
+  return runGraph(graph, settings);
 }

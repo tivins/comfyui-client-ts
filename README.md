@@ -107,6 +107,60 @@ bun generate --prompt "a young cat walking on a table, daylight" --negative "blu
 
 `bun example` lance `src/example.ts` : le même appel, avec les options écrites dans le programme.
 
+## Krea 2
+
+`buildKrea2Prompt` reprend le workflow UI `krea2_safetensor`. Le prompt et le négatif partent dans `inputs.text` de deux nœuds `CLIPTextEncode`. Le CLIP est chargé avec `type: "krea2"`.
+
+Fichiers côté serveur :
+
+- UNET `museByStableYogi_v35Int8Extended.safetensors`
+- CLIP `qwen3vl_4b_fp8_scaled.safetensors`
+- VAE `qwen_image_vae.safetensors`
+
+```ts
+import {
+  generateKrea2,
+  KREA2_DEFAULTS,
+  Sampler,
+  Scheduler,
+  type GenerateSettings,
+  type Krea2Options,
+} from "comfyui-client";
+
+const options: Krea2Options = {
+  prompt: "a small orange cat sleeping on a worn beige carpet",
+  negativePrompt: "",
+  unetName: KREA2_DEFAULTS.unetName,
+  width: KREA2_DEFAULTS.width,
+  height: KREA2_DEFAULTS.height,
+  samplerName: Sampler.Euler,
+  seed: KREA2_DEFAULTS.seed,
+  steps: KREA2_DEFAULTS.steps,
+  cfg: KREA2_DEFAULTS.cfg,
+  scheduler: Scheduler.Simple,
+};
+
+const settings: GenerateSettings = {
+  server: "http://127.0.0.1:8188",
+  outputDir: "/tmp/comfy/out",
+  deleteFromServer: true,
+};
+
+const paths = await generateKrea2(options, settings);
+```
+
+| Champ | Défaut |
+| --- | --- |
+| `unetName` | `museByStableYogi_v35Int8Extended.safetensors` |
+| `width` × `height` | 960 × 1472 |
+| `samplerName` | `euler` |
+| `seed` | `42` |
+| `steps` | `16` |
+| `cfg` | `1.5` |
+| `scheduler` | `simple` |
+
+`denoise` reste à `1`. Le préfixe des fichiers enregistrés est `Krea2`.
+
 ## Tests
 
 ```sh
