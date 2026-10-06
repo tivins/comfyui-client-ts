@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.0 — 2026-10-03
+
+`readPngMetadata` lit les chunks PNG `prompt` (graphe API) et `workflow` (graphe UI). `tEXt`, `zTXt`, `iTXt` et le chunk `comf` des PNG animés sont acceptés. `readPngMetadataFile` fait la même lecture depuis un chemin. Un chunk absent vaut `null`.
+
 ## 0.9.0 — 2026-10-02
 
 `buildKrea2Prompt` reprend le graphe UI `krea2_safetensor` : UNET Muse int8, CLIP `qwen3vl_4b` en type `krea2`, VAE `qwen_image_vae`, deux `CLIPTextEncode`, latent 960×1472, `KSampler` euler / simple / 16 pas / cfg 1.5. `generateKrea2` envoie ce graphe avec les mêmes réglages de serveur que `generateQwenImage`.

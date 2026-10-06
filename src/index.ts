@@ -7,6 +7,9 @@ export type { GenerateSettings } from "./qwen-image.ts";
 
 export { generateKrea2 } from "./krea2.ts";
 
+export { readPngMetadata, readPngMetadataFile } from "./png-metadata.ts";
+export type { PngMetadata } from "./png-metadata.ts";
+
 export {
   Aspect,
   ASPECT_RATIOS,

@@ -161,6 +161,18 @@ const paths = await generateKrea2(options, settings);
 
 `denoise` reste à `1`. Le préfixe des fichiers enregistrés est `Krea2`.
 
+## Lire le graphe dans un PNG
+
+ComfyUI écrit le graphe dans le PNG : `prompt` est le graphe API, `workflow` est le graphe de l'interface. `workflow` manque quand l'image a été produite par l'API sans `extra_pnginfo`.
+
+```ts
+import { readPngMetadataFile } from "comfyui-client";
+
+const { prompt, workflow } = await readPngMetadataFile("/tmp/comfy/out/image.png");
+```
+
+`readPngMetadata` prend les octets du fichier. Les chunks `tEXt`, `zTXt`, `iTXt` et `comf` sont lus. Un chunk absent vaut `null`.
+
 ## Tests
 
 ```sh
