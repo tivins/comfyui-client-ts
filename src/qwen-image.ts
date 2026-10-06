@@ -2,7 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildQwenImagePrompt, type ApiPrompt, type QwenImageOptions } from "./workflow.ts";
+import { buildQwenImagePrompt, type ApiPrompt, type QwenImageOptions } from "./workflow";
 
 export const DEFAULT_SERVER = "http://127.0.0.1:8188";
 
