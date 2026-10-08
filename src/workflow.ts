@@ -241,6 +241,7 @@ export const KREA2_DEFAULTS = {
   steps: 16,
   cfg: 1.5,
   scheduler: Scheduler.Simple,
+  loras: []
 } as const satisfies {
   unetName: string;
   width: number;
@@ -250,8 +251,12 @@ export const KREA2_DEFAULTS = {
   steps: number;
   cfg: number;
   scheduler: Scheduler;
+  loras: LoRA[];
 };
-
+export type LoRA = {
+    model: string;
+    weight: number;
+};
 export type Krea2Options = {
   prompt: string;
   negativePrompt: string;
@@ -263,6 +268,7 @@ export type Krea2Options = {
   steps: number;
   cfg: number;
   scheduler: Scheduler;
+  loras: LoRA[];
 };
 
 /**
@@ -273,7 +279,7 @@ export type Krea2Options = {
  * (pas de `ResolutionSelector`). `cfg` vaut 1.5 dans l'exemple qui tourne.
  */
 export function buildKrea2Prompt(options: Krea2Options): ApiPrompt {
-  return {
+  let opts: ApiPrompt = {
     "1": {
       class_type: "UNETLoader",
       inputs: {
@@ -347,4 +353,24 @@ export function buildKrea2Prompt(options: Krea2Options): ApiPrompt {
       },
     },
   };
+
+    let lastModelIndex = 1;
+    let kSamplerIndex = "2";
+    let startAs = 12;
+    for (const lora of options.loras) {
+        opts[startAs.toString()] = {
+            inputs: {
+                lora_name: lora.model,
+                strength_model: lora.weight,
+                model: [lastModelIndex.toString(), 0]
+            },
+            class_type: "LoraLoaderModelOnly",
+        };
+        // @ts-ignore
+        opts[kSamplerIndex].inputs.model[0] = startAs.toString();
+        lastModelIndex = startAs;
+        startAs++;
+    }
+
+  return opts;
 }

@@ -67,7 +67,7 @@ async function waitForHistory(base: string, promptId: string): Promise<HistoryEn
     const now = Date.now();
     if (now - lastLog >= 15_000) {
       const seconds = Math.round((now - started) / 1000);
-      console.log(`en cours (${seconds}s)…`);
+      console.log(`[comfyui] en cours (${seconds}s)…`);
       lastLog = now;
     }
     await Bun.sleep(POLL_MS);
@@ -138,7 +138,7 @@ export async function runGraph(
     settings.outputDir ?? join(dirname(fileURLToPath(import.meta.url)), "..", "output");
 
   const promptId = await queuePrompt(base, graph);
-  console.log(`en file : ${promptId}`);
+  console.log(`[comfyui] en file : ${promptId}`);
 
   const entry = await waitForHistory(base, promptId);
   const images = collectImages(entry);
@@ -150,13 +150,13 @@ export async function runGraph(
   const paths: string[] = [];
   for (const image of images) {
     const path = await downloadImage(base, image, outputDir);
-    console.log(path);
+    // console.log(path);
     paths.push(path);
   }
 
   if (settings.deleteFromServer) {
     await deleteFromServer(base, promptId);
-    console.log(`retiré de ComfyUI : ${promptId}`);
+    console.log(`[comfyui] retiré de ComfyUI : ${promptId}`);
   }
 
   return paths;

@@ -22,4 +22,8 @@ export function dumpOptionsSettings(options: Krea2Options, settings: GenerateSet
     console.log(
         `sampler : ${options.samplerName} / ${options.scheduler}, seed ${options.seed}, ${options.steps} steps`,
     );
+    console.log(`LoRA count: ${options.loras.length}`);
+    for (const lora of options.loras) {
+        console.log(`- ${lora.model} (${lora.weight})`);
+    }
 }
