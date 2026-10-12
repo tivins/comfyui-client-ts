@@ -1,5 +1,5 @@
-import {clearHistory, generateQwenImage, GenerateSettings} from "./qwen-image.ts";
-import {Aspect, Sampler, Scheduler, type QwenImageOptions} from "./workflow.ts";
+import {clearHistory, generateQwenImage, GenerateSettings} from "./qwen-image";
+import {Aspect, Sampler, Scheduler, type QwenImageOptions} from "./workflow";
 
 let options: QwenImageOptions = {
     prompt: "",
