@@ -1,14 +1,19 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 
 import { parseGenerateArgs } from "./generate.ts";
 import {
   Aspect,
   KREA2_DEFAULTS,
+  KREA2_EDIT_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
   Sampler,
   Scheduler,
+  buildKrea2EditPrompt,
   buildKrea2Prompt,
   buildQwenImagePrompt,
+  type ApiPrompt,
+  type Krea2EditOptions,
   type Krea2Options,
   type QwenImageOptions,
 } from "./workflow.ts";
@@ -90,6 +95,8 @@ const kreaOptions: Krea2Options = {
   steps: KREA2_DEFAULTS.steps,
   cfg: KREA2_DEFAULTS.cfg,
   scheduler: KREA2_DEFAULTS.scheduler,
+  loras: [],
+  batchSize: KREA2_DEFAULTS.batchSize,
 };
 
 describe("buildKrea2Prompt", () => {
@@ -152,6 +159,107 @@ describe("buildKrea2Prompt", () => {
     expect(graph["2"]?.inputs.sampler_name).toBe("euler");
     expect(graph["2"]?.inputs.scheduler).toBe("simple");
     expect(graph["2"]?.inputs).not.toHaveProperty("control_after_generate");
+  });
+
+  test("chaîne les LoRA entre l'UNET et le KSampler", () => {
+    const graph = buildKrea2Prompt({
+      ...kreaOptions,
+      loras: [
+        { model: "a.safetensors", weight: 0.8 },
+        { model: "b.safetensors", weight: 0.5 },
+      ],
+    });
+
+    expect(graph["12"]?.class_type).toBe("LoraLoaderModelOnly");
+    expect(graph["12"]?.inputs).toEqual({ lora_name: "a.safetensors", strength_model: 0.8, model: ["1", 0] });
+    expect(graph["13"]?.inputs).toEqual({ lora_name: "b.safetensors", strength_model: 0.5, model: ["12", 0] });
+    expect(graph["2"]?.inputs.model).toEqual(["13", 0]);
+  });
+});
+
+const editOptions: Krea2EditOptions = {
+  ...kreaOptions,
+  negativePrompt: "",
+  referenceImage: "ref.png",
+  editLora: KREA2_EDIT_DEFAULTS.editLora,
+  refBoost: KREA2_EDIT_DEFAULTS.refBoost,
+  groundingPx: KREA2_EDIT_DEFAULTS.groundingPx,
+  fitMode: KREA2_EDIT_DEFAULTS.fitMode,
+};
+
+/** Garde `class_type` et `inputs`, comme le graphe envoyé par l'interface. */
+function withoutMeta(graph: ApiPrompt) {
+  return Object.fromEntries(
+    Object.entries(graph).map(([id, node]) => [id, { class_type: node.class_type, inputs: node.inputs }]),
+  );
+}
+
+describe("buildKrea2EditPrompt", () => {
+  test("reproduit le graphe exporté depuis l'interface", () => {
+    const exported = JSON.parse(
+      readFileSync(new URL("../../docs/workflow_krea2_identity_edit_mei_laughing.json", import.meta.url), "utf8"),
+    ) as ApiPrompt;
+    // L'interface passe par un ResolutionSelector (2:3, 0.5 Mpx) ; le client donne la taille.
+    delete exported["83"];
+    exported["82"]!.inputs.width = 592;
+    exported["82"]!.inputs.height = 888;
+    exported["29"]!.inputs.filename_prefix = "Krea2Edit";
+
+    const graph = buildKrea2EditPrompt({
+      ...editOptions,
+      prompt: "a photo of this person laughing",
+      referenceImage: "v3_seed256.png",
+      width: 592,
+      height: 888,
+      seed: 1033870496364480,
+    });
+
+    expect(withoutMeta(graph)).toEqual(withoutMeta(exported));
+  });
+
+  test("place les réglages de la référence", () => {
+    const graph = buildKrea2EditPrompt({
+      ...editOptions,
+      negativePrompt: "blur",
+      refBoost: 2.5,
+      groundingPx: 1024,
+      fitMode: "crop (legacy)",
+      editLora: { model: "edit.safetensors", weight: 0.9 },
+    });
+
+    expect(graph["72"]?.inputs.image).toBe("ref.png");
+    expect(graph["79"]?.inputs.ref_boost).toBe(2.5);
+    expect(graph["79"]?.inputs.fit_mode).toBe("crop (legacy)");
+    expect(graph["84"]?.inputs.grounding_px).toBe(1024);
+    expect(graph["85"]?.inputs.grounding_px).toBe(1024);
+    expect(graph["85"]?.inputs.prompt).toBe("blur");
+    expect(graph["71"]?.inputs.lora_name).toBe("edit.safetensors");
+    expect(graph["71"]?.inputs.strength_model).toBe(0.9);
+  });
+
+  test("ajoute les autres LoRA après la LoRA d'édition, avant le patch", () => {
+    const graph = buildKrea2EditPrompt({
+      ...editOptions,
+      loras: [{ model: "style.safetensors", weight: 0.6 }],
+    });
+
+    expect(graph["71"]?.inputs.model).toEqual(["55", 0]);
+    expect(graph["86"]?.inputs).toEqual({ lora_name: "style.safetensors", strength_model: 0.6, model: ["71", 0] });
+    expect(graph["79"]?.inputs.model).toEqual(["86", 0]);
+    expect(graph["53"]?.inputs.model).toEqual(["79", 0]);
+  });
+
+  test("garde les défauts retenus lors des essais dans l'interface", () => {
+    const graph = buildKrea2EditPrompt(editOptions, { title: "run" });
+
+    expect(graph["55"]?._meta).toEqual({ title: "run" });
+    expect(graph["71"]?.inputs.lora_name).toBe("krea2_identity_edit_v1_2_r128.safetensors");
+    expect(graph["79"]?.inputs.ref_boost).toBe(4);
+    expect(graph["84"]?.inputs.grounding_px).toBe(768);
+    expect(graph["82"]?.inputs.width).toBe(960);
+    expect(graph["82"]?.inputs.height).toBe(1472);
+    expect(graph["53"]?.inputs.steps).toBe(16);
+    expect(graph["53"]?.inputs.cfg).toBe(1.5);
   });
 });
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 — 2026-10-13
+
+`generateKrea2Edit` génère une image Krea 2 à partir d'une image de référence, avec la LoRA Identity Edit et les nœuds `comfyui-krea2edit`. L'image locale est d'abord envoyée par `uploadImage` (`POST /upload/image`). `buildKrea2EditPrompt` reproduit le graphe exporté de l'interface (`docs/workflow_krea2_identity_edit_mei_laughing.json`). La référence passe en latent dans `Krea2EditModelPatch` et dans Qwen3-VL par `Krea2EditGroundedEncode`. Réglages : `refBoost` (4), `groundingPx` (768), `fitMode`, `editLora`. Les autres LoRA de `loras` s'appliquent après la LoRA d'édition. `KREA2_EDIT_DEFAULTS`, `FitMode` et le type `LoRA` sont exportés.
+
+`buildKrea2Prompt` produit le même graphe qu'avant. Les options des tests Krea 2 reçoivent `loras` et `batchSize`, qui manquaient depuis l'ajout des LoRA.
+
 ## 0.10.0 — 2026-10-03
 
 `readPngMetadata` lit les chunks PNG `prompt` (graphe API) et `workflow` (graphe UI). `tEXt`, `zTXt`, `iTXt` et le chunk `comf` des PNG animés sont acceptés. `readPngMetadataFile` fait la même lecture depuis un chemin. Un chunk absent vaut `null`.

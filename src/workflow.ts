@@ -381,24 +381,213 @@ export function buildKrea2Prompt(options: Krea2Options, meta:  Record<string, Ap
         opts["1"]._meta = meta;
     }
 
-    let lastModelIndex = 1;
-    let kSamplerIndex = "2";
-    let startAs = 12;
-    for (const lora of options.loras) {
-        opts[startAs.toString()] = {
+    chainLoras(opts, options.loras, "1", "2", 12);
+
+    return opts;
+}
+
+/**
+ * Intercale des `LoraLoaderModelOnly` entre la sortie modèle du nœud `from`
+ * et l'entrée `model` du nœud `to`. Les nœuds ajoutés prennent les ids
+ * `firstId`, `firstId + 1`, … Sans LoRA, le graphe ne change pas.
+ */
+function chainLoras(graph: ApiPrompt, loras: LoRA[], from: string, to: string, firstId: number): void {
+    let previous = from;
+    let id = firstId;
+    for (const lora of loras) {
+        graph[String(id)] = {
             inputs: {
                 lora_name: lora.model,
                 strength_model: lora.weight,
-                model: [lastModelIndex.toString(), 0]
+                model: [previous, 0]
             },
             class_type: "LoraLoaderModelOnly",
-            _meta:{}
+            _meta: {}
         };
-        // @ts-ignore
-        opts[kSamplerIndex].inputs.model[0] = startAs.toString();
-        lastModelIndex = startAs;
-        startAs++;
+        previous = String(id);
+        id++;
     }
+    graph[to]!.inputs.model = [previous, 0];
+}
+
+/** Valeurs de `Krea2EditModelPatch.fit_mode`. */
+export const FitMode = {
+  Fit: "fit",
+  Crop: "crop (legacy)",
+} as const;
+export type FitMode = (typeof FitMode)[keyof typeof FitMode];
+
+export const KREA2_EDIT_DEFAULTS = {
+  ...KREA2_DEFAULTS,
+  editLora: { model: "krea2_identity_edit_v1_2_r128.safetensors", weight: 1 },
+  refBoost: 4,
+  groundingPx: 768,
+  fitMode: FitMode.Fit,
+} as const satisfies {
+  editLora: LoRA;
+  refBoost: number;
+  groundingPx: number;
+  fitMode: FitMode;
+};
+
+export type Krea2EditOptions = Krea2Options & {
+  /** Nom de l'image dans le dossier `input` du serveur, tel que le renvoie `uploadImage`. */
+  referenceImage: string;
+  /** LoRA d'édition, appliquée avant `loras`. Les nœuds de la LoRA en ont besoin pour lire la référence. */
+  editLora: LoRA;
+  /** `ref_boost` : >1 tire vers l'apparence de la référence, <1 laisse plus de liberté. */
+  refBoost: number;
+  /** `grounding_px` : côté max de l'image vue par Qwen3-VL. Plus haut = plus de ressemblance, plus bas = consigne mieux suivie. */
+  groundingPx: number;
+  fitMode: FitMode;
+};
+
+/**
+ * Graphe API du workflow UI `krea2_identity_edit` (paquet `comfyui-krea2edit`),
+ * exporté avec le fine-tune Muse et la LoRA Identity Edit.
+ *
+ * L'image de référence (72) part sur deux chemins : en latent dans
+ * `Krea2EditModelPatch` (79), et dans Qwen3-VL avec la consigne par
+ * `Krea2EditGroundedEncode` (84). Le négatif (85) est un second
+ * `Krea2EditGroundedEncode` sur la même image ; il ne compte qu'à cfg > 1.
+ * Le latent vide (82) va aussi sur `target_latent`, pour que la référence
+ * soit encodée avant l'échantillonnage. Sans les nœuds du paquet, ComfyUI
+ * refuse le graphe ; sans la LoRA, la référence est mal suivie.
+ */
+export function buildKrea2EditPrompt(options: Krea2EditOptions, meta: Record<string, ApiInput> | null = null): ApiPrompt {
+    const opts: ApiPrompt = {
+        "55": {
+            class_type: "UNETLoader",
+            inputs: {
+                unet_name: options.unetName,
+                weight_dtype: "default",
+            },
+            _meta: {}
+        },
+        "56": {
+            class_type: "CLIPLoader",
+            inputs: {
+                clip_name: "qwen3vl_4b_fp8_scaled.safetensors",
+                type: "krea2",
+                device: "default",
+            },
+            _meta: {}
+        },
+        "57": {
+            class_type: "VAELoader",
+            inputs: {
+                vae_name: "qwen_image_vae.safetensors",
+            },
+            _meta: {}
+        },
+        "71": {
+            class_type: "LoraLoaderModelOnly",
+            inputs: {
+                lora_name: options.editLora.model,
+                strength_model: options.editLora.weight,
+                model: ["55", 0],
+            },
+            _meta: {}
+        },
+        "72": {
+            class_type: "LoadImage",
+            inputs: {
+                image: options.referenceImage,
+            },
+            _meta: {}
+        },
+        "73": {
+            class_type: "VAEEncode",
+            inputs: {
+                pixels: ["72", 0],
+                vae: ["57", 0],
+            },
+            _meta: {}
+        },
+        "82": {
+            class_type: "EmptySD3LatentImage",
+            inputs: {
+                width: options.width,
+                height: options.height,
+                batch_size: options.batchSize,
+            },
+            _meta: {}
+        },
+        "79": {
+            class_type: "Krea2EditModelPatch",
+            inputs: {
+                model: ["71", 0],
+                source_latent: ["73", 0],
+                vae: ["57", 0],
+                source_image: ["72", 0],
+                target_latent: ["82", 0],
+                ref_boost: options.refBoost,
+                ref_boost_a: 1,
+                fit_mode: options.fitMode,
+            },
+            _meta: {}
+        },
+        "84": {
+            class_type: "Krea2EditGroundedEncode",
+            inputs: {
+                clip: ["56", 0],
+                image: ["72", 0],
+                prompt: options.prompt,
+                grounding_px: options.groundingPx,
+                system_prompt: "",
+            },
+            _meta: {}
+        },
+        "85": {
+            class_type: "Krea2EditGroundedEncode",
+            inputs: {
+                clip: ["56", 0],
+                image: ["72", 0],
+                prompt: options.negativePrompt,
+                grounding_px: options.groundingPx,
+                system_prompt: "",
+            },
+            _meta: {}
+        },
+        "53": {
+            class_type: "KSampler",
+            inputs: {
+                model: ["79", 0],
+                positive: ["84", 0],
+                negative: ["85", 0],
+                latent_image: ["82", 0],
+                seed: options.seed,
+                steps: options.steps,
+                cfg: options.cfg,
+                sampler_name: options.samplerName,
+                scheduler: options.scheduler,
+                denoise: 1,
+            },
+            _meta: {}
+        },
+        "54": {
+            class_type: "VAEDecode",
+            inputs: {
+                samples: ["53", 0],
+                vae: ["57", 0],
+            },
+            _meta: {}
+        },
+        "29": {
+            class_type: "SaveImage",
+            inputs: {
+                images: ["54", 0],
+                filename_prefix: "Krea2Edit",
+            },
+            _meta: {}
+        },
+    };
+
+    if (meta !== null) {
+        opts["55"]._meta = meta;
+    }
+
+    chainLoras(opts, options.loras, "71", "79", 86);
 
     return opts;
 }

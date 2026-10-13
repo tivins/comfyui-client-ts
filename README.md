@@ -138,6 +138,8 @@ const options: Krea2Options = {
   steps: KREA2_DEFAULTS.steps,
   cfg: KREA2_DEFAULTS.cfg,
   scheduler: Scheduler.Simple,
+  loras: [],
+  batchSize: KREA2_DEFAULTS.batchSize,
 };
 
 const settings: GenerateSettings = {
@@ -160,6 +162,44 @@ const paths = await generateKrea2(options, settings);
 | `scheduler` | `simple` |
 
 `denoise` reste à `1`. Le préfixe des fichiers enregistrés est `Krea2`.
+
+`loras` (`LoRA[]` : `model`, `weight`) ajoute des `LoraLoaderModelOnly` entre l'UNET et le `KSampler`, dans l'ordre du tableau.
+
+## Krea 2 avec image de référence
+
+`buildKrea2EditPrompt` reprend le workflow `krea2_identity_edit` du paquet de nœuds [comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit). La LoRA Identity Edit replace la personne de l'image de référence dans la scène décrite par la consigne. Le graphe d'origine, exporté depuis l'interface, est `docs/workflow_krea2_identity_edit_mei_laughing.json` ; un test vérifie que le graphe produit est le même.
+
+À installer côté serveur, en plus des fichiers Krea 2 :
+
+- le paquet `comfyui-krea2edit` dans `ComfyUI/custom_nodes`. Sans lui, ComfyUI refuse le graphe (`Krea2EditModelPatch` inconnu) ;
+- la LoRA `krea2_identity_edit_v1_2_r128.safetensors` ([conradlocke/krea2-identity-edit](https://huggingface.co/conradlocke/krea2-identity-edit), *Krea 2 Community License*) dans `models/loras`. Sans cette LoRA, Krea 2 ne tient pas compte de la référence.
+
+`generateKrea2Edit` envoie d'abord l'image locale `referenceImage` avec `uploadImage` (`POST /upload/image`), puis le graphe :
+
+```ts
+import { generateKrea2Edit, KREA2_EDIT_DEFAULTS } from "comfyui-client";
+
+const paths = await generateKrea2Edit({
+  ...KREA2_EDIT_DEFAULTS,
+  prompt: "Place this person in a small café at night, wearing a dark green wool coat, medium shot.",
+  negativePrompt: "",
+  referenceImage: "/data/refs/portrait.png",
+});
+```
+
+Les champs de `Krea2Options` sont repris. Ceux qui s'ajoutent :
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `referenceImage` | — | `LoadImage` : chemin local pour `generateKrea2Edit`, nom côté serveur pour `buildKrea2EditPrompt` |
+| `editLora` | `krea2_identity_edit_v1_2_r128.safetensors`, poids `1` | `LoraLoaderModelOnly`, appliquée avant `loras` |
+| `refBoost` | `4` | `Krea2EditModelPatch.ref_boost` : >1 tire vers la référence, <1 laisse plus de liberté |
+| `groundingPx` | `768` | `Krea2EditGroundedEncode.grounding_px` : plus haut = plus de ressemblance, plus bas = consigne mieux suivie |
+| `fitMode` | `FitMode.Fit` | `Krea2EditModelPatch.fit_mode` |
+
+La consigne est une instruction d'édition. Ce qu'elle ne mentionne pas (tenue, accessoires, fond, cadrage, lumière) est repris de la référence. `negativePrompt` part dans un second `Krea2EditGroundedEncode` sur la même image ; il ne compte qu'à `cfg` > 1 et le paquet le laisse vide. Le préfixe des fichiers enregistrés est `Krea2Edit`.
+
+`uploadImage(path, settings)` renvoie la valeur à mettre dans `LoadImage.inputs.image`. Si un fichier identique existe déjà dans `input/`, ComfyUI le réutilise. S'il existe un fichier différent sous le même nom, ComfyUI enregistre la nouvelle image sous `nom (1).png`.
 
 ## Lire le graphe dans un PNG
 
