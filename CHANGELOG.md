@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0 — 2026-10-13
+
+Rangement. Le code commun à tous les modèles passe de `qwen-image.ts` à `client.ts` (`runGraph`, `clearHistory`, `GenerateSettings`). Chaque modèle a son fichier dans `src/models/` : `qwen-image.ts`, `krea2.ts` et `wan22.ts`, chacun avec ses défauts, ses options, son graphe et sa fonction `generate…`. `workflow.ts` ne garde que les types du graphe, `Aspect`, `Sampler`, `Scheduler`, `LoRA`, `chainLoras` et `applyMeta`. Les noms exportés par `"comfyui-client"` ne changent pas, sauf ceux du logger.
+
+Changement de signature : `logger` et `meta` passent dans `GenerateSettings`. `generateQwenImage`, `generateKrea2`, `generateKrea2Edit` et `generateWan22` prennent `(options, settings)`. `LoggerInterface` et `DefaultLogger` sont remplacés par `Logger`, dont les méthodes ont les signatures de `console` (qui peut être passé tel quel), et `silentLogger`, utilisé par défaut. Les messages de progression passent tous par le logger. `generateQwenImage` et `generateKrea2` n'affichent plus leurs options sur la console. La classe `ComfyAPI`, inutilisée, est retirée.
+
+`meta` est ajouté au `_meta` existant au lieu de le remplacer. Il marche pour les quatre graphes : UNET pour Qwen (483) et Krea 2 (1, 55), image d'entrée pour Wan 2.2 (97). `buildQwenImagePrompt` et `buildWan22Prompt` acceptent `meta` comme les builders Krea 2.
+
+`Wan22Options` ne garde que les champs branchés sur le graphe : `inputImage`, `prompt`, `width`, `height`, `seed`, `fps`. Les autres (`negativePrompt`, `unetName`, `samplerName`, `steps`, `cfg`, `scheduler`, `loras`, `batchSize`) n'avaient aucun effet. Le `_meta` de test du nœud 97 est retiré.
+
+Le `.gitignore` racine n'ignore plus que `/models/`, pour que `client-ts/src/models/` soit suivi.
+
 ## 0.11.0 — 2026-10-13
 
 `generateKrea2Edit` génère une image Krea 2 à partir d'une image de référence, avec la LoRA Identity Edit et les nœuds `comfyui-krea2edit`. L'image locale est d'abord envoyée par `uploadImage` (`POST /upload/image`). `buildKrea2EditPrompt` reproduit le graphe exporté de l'interface (`docs/workflow_krea2_identity_edit_mei_laughing.json`). La référence passe en latent dans `Krea2EditModelPatch` et dans Qwen3-VL par `Krea2EditGroundedEncode`. Réglages : `refBoost` (4), `groundingPx` (768), `fitMode`, `editLora`. Les autres LoRA de `loras` s'appliquent après la LoRA d'édition. `KREA2_EDIT_DEFAULTS`, `FitMode` et le type `LoRA` sont exportés.

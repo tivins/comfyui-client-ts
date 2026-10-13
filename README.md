@@ -1,6 +1,13 @@
 # comfyui-client
 
-Client Bun qui envoie le graphe API Qwen Image 2.1 à un serveur ComfyUI, attend la fin du prompt, et enregistre les images en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+
+| Fichier | Contenu |
+| --- | --- |
+| `src/client.ts` | `runGraph` (envoi, attente, téléchargement), `clearHistory`, `GenerateSettings` |
+| `src/logger.ts` | `Logger`, `silentLogger` |
+| `src/workflow.ts` | types du graphe API, `Aspect`, `Sampler`, `Scheduler`, `LoRA` |
+| `src/models/*.ts` | un fichier par modèle : défauts, options, graphe, fonction `generate…` |
 
 Le graphe reprend le workflow UI `image_qwen_image_2_1_t2i_001_simple`. `POST /prompt` reçoit les textes dans `inputs.prompt` et `inputs.negative_prompt` du nœud `TextEncodeQwenImage21`.
 
@@ -61,17 +68,29 @@ const paths = await generateQwenImage(options, settings);
 
 `generateQwenImage` envoie le graphe, interroge `GET /history/{prompt_id}` toutes les 2 secondes (timeout 30 minutes), télécharge les images via `GET /view`, et renvoie les chemins locaux.
 
-`QwenImageOptions` porte le prompt et les réglages d'image. `GenerateSettings` porte le serveur et le dossier de sortie.
+`QwenImageOptions` porte le prompt et les réglages d'image. `GenerateSettings` porte ce qui ne dépend pas du modèle ; tous les `generate…` le prennent en second argument.
 
 | Champ | Défaut |
 | --- | --- |
 | `server` | `http://127.0.0.1:8188` |
 | `outputDir` | `client-ts/output` |
 | `deleteFromServer` | absent : l'historique et la file restent |
+| `logger` | `silentLogger` : rien n'est affiché |
+| `meta` | absent |
 
 `Aspect`, `Sampler` et `Scheduler` sont des objets de littéraux. `Sampler.Euler` vaut `"euler"`. ComfyUI reçoit cette chaîne.
 
 `deleteFromServer` retire le prompt de l'historique (`POST /history`) puis de la file (`POST /queue`), avec `{ delete: [promptId] }`. Le fichier dans le dossier `output` du serveur n'est pas effacé.
+
+## Suivi et métadonnées
+
+`logger` reçoit la mise en file, la progression (toutes les 15 s), la fin, chaque fichier enregistré et le retrait du serveur. `Logger` a les signatures de `console` (`debug`, `log`, `warn`, `error`), qui peut donc être passé tel quel :
+
+```ts
+await generateQwenImage(options, { ...settings, logger: console });
+```
+
+`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen et Krea 2, l'image d'entrée pour Wan 2.2). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` le relit : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
 
 ## Vider l'historique
 
@@ -200,6 +219,27 @@ Les champs de `Krea2Options` sont repris. Ceux qui s'ajoutent :
 La consigne est une instruction d'édition. Ce qu'elle ne mentionne pas (tenue, accessoires, fond, cadrage, lumière) est repris de la référence. `negativePrompt` part dans un second `Krea2EditGroundedEncode` sur la même image ; il ne compte qu'à `cfg` > 1 et le paquet le laisse vide. Le préfixe des fichiers enregistrés est `Krea2Edit`.
 
 `uploadImage(path, settings)` renvoie la valeur à mettre dans `LoadImage.inputs.image`. Si un fichier identique existe déjà dans `input/`, ComfyUI le réutilise. S'il existe un fichier différent sous le même nom, ComfyUI enregistre la nouvelle image sous `nom (1).png`.
+
+## Wan 2.2 image → vidéo
+
+`buildWan22Prompt` reprend le workflow UI Wan 2.2 i2v 14B fp8 : UNET high noise jusqu'au pas 10, puis low noise jusqu'au pas 20, cfg 3.5, euler / simple, sans la LoRA lightx2v 4 pas. La vidéo dure 5 s. Ces réglages sont fixes ; seuls ceux de `Wan22Options` changent :
+
+| Champ | Nœud |
+| --- | --- |
+| `inputImage` | `LoadImage` : nom côté serveur, tel que le renvoie `uploadImage` |
+| `prompt` | `CLIPTextEncode` positif |
+| `width` × `height` | `WanImageToVideo` |
+| `seed` | premier `KSamplerAdvanced` |
+| `fps` | `CreateVideo` ; `floor(5 × fps + 1)` images |
+
+```ts
+import { generateWan22, uploadImage } from "comfyui-client";
+
+const inputImage = await uploadImage("/data/refs/start.png", settings);
+const paths = await generateWan22({ inputImage, prompt: "the cat turns its head", width: 640, height: 640, seed: 0, fps: 16 }, settings);
+```
+
+Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors` et `wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors`, CLIP `umt5_xxl_fp8_e4m3fn_scaled.safetensors`, VAE `wan_2.1_vae.safetensors`.
 
 ## Lire le graphe dans un PNG
 

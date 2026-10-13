@@ -1,5 +1,6 @@
-import {clearHistory, generateQwenImage, GenerateSettings} from "./qwen-image";
-import {Aspect, Sampler, Scheduler, type QwenImageOptions} from "./workflow";
+import {type GenerateSettings} from "./client";
+import {generateQwenImage, type QwenImageOptions} from "./models/qwen-image";
+import {Aspect, Sampler, Scheduler} from "./workflow";
 
 let options: QwenImageOptions = {
     prompt: "",
@@ -16,6 +17,7 @@ const settings: GenerateSettings = {
     server: "http://127.0.0.1:8188",
     outputDir: "/tmp/comfy/out",
     deleteFromServer: true,
+    logger: console,
 };
 
 const prompts = [
@@ -40,5 +42,4 @@ if (import.meta.main) {
             console.log("paths=", paths);
         }).catch(catcher);
     })
-    // clearHistory(settings.server);
 }

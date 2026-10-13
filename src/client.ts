@@ -2,12 +2,13 @@ import {mkdir} from "node:fs/promises";
 import {dirname, join} from "node:path";
 import {fileURLToPath} from "node:url";
 
-import {buildQwenImagePrompt, type ApiPrompt, type QwenImageOptions} from "./workflow";
-import {LoggerInterface} from "./loggerInterface";
+import {silentLogger, type Logger} from "./logger";
+import type {ApiInput, ApiPrompt} from "./workflow";
 
 export const DEFAULT_SERVER = "http://127.0.0.1:8188";
 
 const POLL_MS = 2000;
+const PROGRESS_LOG_MS = 15_000;
 const TIMEOUT_MS = 30 * 60 * 1000;
 
 type HistoryImage = {
@@ -30,7 +31,15 @@ export type GenerateSettings = {
     outputDir?: string;
     /** Après téléchargement, retire l'image de l'historique et le prompt de la file. Le fichier dans `output/` reste. */
     deleteFromServer?: boolean;
+    /** Suivi de la génération. Par défaut, rien n'est affiché. `console` convient. */
+    logger?: Logger;
+    /** Posé dans le `_meta` d'un nœud du graphe ; ComfyUI le recopie dans le chunk `prompt` des fichiers produits. */
+    meta?: Record<string, ApiInput>;
 };
+
+export function serverBase(settings: GenerateSettings): string {
+    return (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
+}
 
 async function queuePrompt(base: string, prompt: ApiPrompt): Promise<string> {
     const response = await fetch(`${base}/prompt`, {
@@ -49,14 +58,10 @@ async function queuePrompt(base: string, prompt: ApiPrompt): Promise<string> {
     return promptId;
 }
 
-async function waitForHistory(base: string, promptId: string, logger: LoggerInterface | null = null): Promise<HistoryEntry> {
-    const apiClient = new ComfyAPI(base);
+async function waitForHistory(base: string, promptId: string, logger: Logger): Promise<HistoryEntry> {
     const started = Date.now();
-    let lastLog = 0;
+    let lastLog = started;
     while (Date.now() - started < TIMEOUT_MS) {
-
-        // const re = await apiClient.getJobInfo(promptId);
-
         const response = await fetch(`${base}/history/${promptId}`);
         if (!response.ok) {
             throw new Error(`GET /history/${promptId} a répondu ${response.status}`);
@@ -64,21 +69,16 @@ async function waitForHistory(base: string, promptId: string, logger: LoggerInte
         const history = (await response.json()) as Record<string, HistoryEntry>;
         const entry = history[promptId];
         const now = Date.now();
+        const seconds = Math.round((now - started) / 1000);
         if (entry?.status?.completed) {
             if (entry.status.status_str && entry.status.status_str !== "success") {
                 throw new Error(`Génération en échec : ${JSON.stringify(entry.status)}`);
             }
-            if (logger) {
-                const seconds = Math.round((now - started) / 1000);
-                console.log(`[comfyui] finished (${seconds}s)…`);
-            }
+            logger.log(`[comfyui] terminé (${seconds}s)`, promptId);
             return entry;
         }
-        if (now - lastLog >= 15_000) {
-            if (logger) {
-                const seconds = Math.round((now - started) / 1000);
-                console.log(`[comfyui] en cours (${seconds}s)…`);
-            }
+        if (now - lastLog >= PROGRESS_LOG_MS) {
+            logger.log(`[comfyui] en cours (${seconds}s)…`, promptId);
             lastLog = now;
         }
         await Bun.sleep(POLL_MS);
@@ -86,6 +86,15 @@ async function waitForHistory(base: string, promptId: string, logger: LoggerInte
     throw new Error(`Pas de résultat après ${TIMEOUT_MS / 1000}s (prompt_id ${promptId})`);
 }
 
+/**
+ * Fichiers produits par les nœuds de sortie.
+ *
+ * Doute : seule la clé `images` est lue. Pour `SaveVideo` (Wan 2.2), la
+ * vidéo est bien récupérée à l'usage, ce qui laisse penser que ComfyUI la
+ * range aussi sous `images` (avec `animated`). Ce n'est pas vérifié dans
+ * le code de ComfyUI : si une version la range ailleurs (`videos`, `gifs`…),
+ * `runGraph` lèvera « Aucune image dans l'historique ».
+ */
 function collectImages(entry: HistoryEntry): HistoryImage[] {
     const images: HistoryImage[] = [];
     for (const output of Object.values(entry.outputs ?? {})) {
@@ -98,7 +107,7 @@ function collectImages(entry: HistoryEntry): HistoryImage[] {
 
 /** Vide l'historique des prompts terminés. La file en attente et le prompt en cours restent. */
 export async function clearHistory(server: string = DEFAULT_SERVER): Promise<void> {
-    const base = server.replace(/\/$/, "");
+    const base = serverBase({server});
     const response = await fetch(`${base}/history`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -140,54 +149,18 @@ async function downloadImage(base: string, image: HistoryImage, directory: strin
     return target;
 }
 
-class ComfyAPI {
-    base: string;
-    constructor(server: string) {
-        this.base = server.replace(/\/$/, "");
-    }
-    async post(route:string, body:any): Promise<void> {
-        const response = await fetch(`${this.base}/${route}`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(body),
-        });
-        if (!response.ok) {
-            throw new Error(`POST /history (clear) a répondu ${response.status}`);
-        }
-    }
-    async get(route:string, params: Record<string, string>): Promise<Response> {
-        const pam = new URLSearchParams(params).toString();
-        const url = `${this.base}/${route}${pam?'?'+pam:''}`;
-        console.log(url);
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {"Content-Type": "application/json"},
-        });
-        // if (!response.ok) {
-        //     throw new Error(`POST /history (clear) a répondu ${response.status}`);
-        // }
-        return response;
-    }
-    async getJobInfo(jobId: string) {
-        const r = await this.get("api/jobs/" + jobId, {});
-        if (!r.ok) {
-            return false;
-        }
-        return await r.json();
-    }
-}
-
-export async function runGraph(
-    graph: ApiPrompt,
-    settings: GenerateSettings,
-    logger: LoggerInterface | null = null
-): Promise<string[]> {
-    const base = (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
+/**
+ * Envoie un graphe API, attend la fin, et enregistre les fichiers produits
+ * dans `settings.outputDir`. Renvoie leurs chemins locaux.
+ */
+export async function runGraph(graph: ApiPrompt, settings: GenerateSettings = {}): Promise<string[]> {
+    const base = serverBase(settings);
+    const logger = settings.logger ?? silentLogger;
     const outputDir =
         settings.outputDir ?? join(dirname(fileURLToPath(import.meta.url)), "..", "output");
 
     const promptId = await queuePrompt(base, graph);
-    if (logger) logger.log(`[comfyui] en file`, promptId);
+    logger.log(`[comfyui] en file`, promptId);
 
     const entry = await waitForHistory(base, promptId, logger);
     const images = collectImages(entry);
@@ -199,36 +172,14 @@ export async function runGraph(
     const paths: string[] = [];
     for (const image of images) {
         const path = await downloadImage(base, image, outputDir);
-        // console.log(path);
+        logger.log(`[comfyui] enregistré`, path);
         paths.push(path);
     }
 
     if (settings.deleteFromServer) {
         await deleteFromServer(base, promptId);
-        if (logger) logger.log(`[comfyui] retiré de ComfyUI`, promptId);
+        logger.log(`[comfyui] retiré de ComfyUI`, promptId);
     }
 
     return paths;
-}
-
-/**
- * Envoie le graphe Qwen, attend la fin, et enregistre les images.
- * `server` et `outputDir` ne font pas partie des options d'image.
- */
-export async function generateQwenImage(
-    options: QwenImageOptions,
-    settings: GenerateSettings = {},
-    logger: LoggerInterface|null = null
-): Promise<string[]> {
-    const base = (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
-    const graph = buildQwenImagePrompt(options);
-    console.log(`serveur ${base}`);
-    console.log(`prompt : ${options.prompt}`);
-    console.log(`négatif : ${options.negativePrompt}`);
-    console.log(`unet : ${options.unetName}`);
-    console.log(`ratio : ${options.aspectRatio}`);
-    console.log(
-        `sampler : ${options.samplerName} / ${options.scheduler}, seed ${options.seed}, ${options.steps} steps`,
-    );
-    return runGraph(graph, settings);
 }

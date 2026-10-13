@@ -1,11 +1,6 @@
-import {
-  ASPECT_RATIOS,
-  QWEN_IMAGE_DEFAULTS,
-  SAMPLER_NAMES,
-  SCHEDULER_NAMES,
-  type QwenImageOptions,
-} from "./workflow.ts";
-import { DEFAULT_SERVER, generateQwenImage } from "./qwen-image.ts";
+import { ASPECT_RATIOS, SAMPLER_NAMES, SCHEDULER_NAMES } from "./workflow.ts";
+import { DEFAULT_SERVER } from "./client.ts";
+import { QWEN_IMAGE_DEFAULTS, generateQwenImage, type QwenImageOptions } from "./models/qwen-image.ts";
 
 const DEFAULT_PROMPT = "a young cat walking on a table, daylight";
 const DEFAULT_NEGATIVE = "blur,bad quality";
@@ -68,7 +63,8 @@ export function parseGenerateArgs(
 
 async function main(): Promise<void> {
   const { server, options } = parseGenerateArgs(process.argv, process.env);
-  await generateQwenImage(options, { server });
+  const paths = await generateQwenImage(options, { server, logger: console });
+  for (const path of paths) console.log(path);
 }
 
 if (import.meta.main) {

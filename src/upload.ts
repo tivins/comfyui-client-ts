@@ -1,6 +1,6 @@
 import {basename} from "node:path";
 
-import {DEFAULT_SERVER, type GenerateSettings} from "./qwen-image";
+import {serverBase, type GenerateSettings} from "./client";
 
 /**
  * Envoie une image locale dans le dossier `input` de ComfyUI (`POST /upload/image`).
@@ -10,7 +10,7 @@ import {DEFAULT_SERVER, type GenerateSettings} from "./qwen-image";
  * et renomme (`nom (1).png`) un fichier différent de même nom.
  */
 export async function uploadImage(path: string, settings: GenerateSettings = {}): Promise<string> {
-    const base = (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
+    const base = serverBase(settings);
     const form = new FormData();
     // Un Bun.file garderait le chemin complet comme nom, que ComfyUI refuse.
     form.append("image", new File([await Bun.file(path).bytes()], basename(path)));

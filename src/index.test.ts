@@ -8,9 +8,13 @@ import {
   Sampler,
   Scheduler,
   buildKrea2Prompt,
+  buildWan22Prompt,
   generateKrea2,
+  generateWan22,
   readPngMetadata,
   readPngMetadataFile,
+  silentLogger,
+  type Logger,
 } from "./index.ts";
 
 test("l'entrée du paquet expose l'API publique", () => {
@@ -25,4 +29,12 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof generateKrea2).toBe("function");
   expect(typeof readPngMetadata).toBe("function");
   expect(typeof readPngMetadataFile).toBe("function");
+  expect(typeof buildWan22Prompt).toBe("function");
+  expect(typeof generateWan22).toBe("function");
+  expect(() => silentLogger.log("rien")).not.toThrow();
+});
+
+test("console convient comme Logger", () => {
+  const logger: Logger = console;
+  expect(typeof logger.debug).toBe("function");
 });
