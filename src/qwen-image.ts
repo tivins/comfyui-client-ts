@@ -49,7 +49,7 @@ async function queuePrompt(base: string, prompt: ApiPrompt): Promise<string> {
     return promptId;
 }
 
-async function waitForHistory(base: string, promptId: string): Promise<HistoryEntry> {
+async function waitForHistory(base: string, promptId: string, logger: LoggerInterface | null = null): Promise<HistoryEntry> {
     const apiClient = new ComfyAPI(base);
     const started = Date.now();
     let lastLog = 0;
@@ -68,13 +68,17 @@ async function waitForHistory(base: string, promptId: string): Promise<HistoryEn
             if (entry.status.status_str && entry.status.status_str !== "success") {
                 throw new Error(`Génération en échec : ${JSON.stringify(entry.status)}`);
             }
-            const seconds = Math.round((now - started) / 1000);
-            console.log(`[comfyui] finished (${seconds}s)…`);
+            if (logger) {
+                const seconds = Math.round((now - started) / 1000);
+                console.log(`[comfyui] finished (${seconds}s)…`);
+            }
             return entry;
         }
         if (now - lastLog >= 15_000) {
-            const seconds = Math.round((now - started) / 1000);
-            console.log(`[comfyui] en cours (${seconds}s)…`);
+            if (logger) {
+                const seconds = Math.round((now - started) / 1000);
+                console.log(`[comfyui] en cours (${seconds}s)…`);
+            }
             lastLog = now;
         }
         await Bun.sleep(POLL_MS);
@@ -176,7 +180,7 @@ class ComfyAPI {
 export async function runGraph(
     graph: ApiPrompt,
     settings: GenerateSettings,
-    logger: LoggerInterface | null
+    logger: LoggerInterface | null = null
 ): Promise<string[]> {
     const base = (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
     const outputDir =
@@ -185,7 +189,7 @@ export async function runGraph(
     const promptId = await queuePrompt(base, graph);
     if (logger) logger.log(`[comfyui] en file`, promptId);
 
-    const entry = await waitForHistory(base, promptId);
+    const entry = await waitForHistory(base, promptId, logger);
     const images = collectImages(entry);
     if (images.length === 0) {
         throw new Error(`Aucune image dans l'historique de ${promptId}`);
