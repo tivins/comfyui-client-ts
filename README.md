@@ -1,6 +1,6 @@
 # comfyui-client
 
-Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax Music 3) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
 
 | Fichier | Contenu |
 | --- | --- |
@@ -90,7 +90,7 @@ const paths = await generateQwenImage(options, settings);
 await generateQwenImage(options, { ...settings, logger: console });
 ```
 
-`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen et Krea 2, l'image d'entrée pour Wan 2.2). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` le relit : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
+`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen, Krea 2 et MiniMax Music 3, l'image d'entrée pour Wan 2.2). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` le relit : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
 
 ## Vider l'historique
 
@@ -240,6 +240,39 @@ const paths = await generateWan22({ inputImage, prompt: "the cat turns its head"
 ```
 
 Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors` et `wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors`, CLIP `umt5_xxl_fp8_e4m3fn_scaled.safetensors`, VAE `wan_2.1_vae.safetensors`.
+
+## MiniMax Music 3
+
+`buildMiniMaxMusic3Prompt` reprend le workflow UI `audio_minimax_music_3` (`docs/workflow_audio_minimax_music_3.json` ; un test vérifie que le graphe produit est le même). `MiniMaxMusic3TextEncode` reçoit la description et les paroles et renvoie la durée réelle du morceau, qui dimensionne le latent. `KSampler` euler / simple, négatif à zéro, décodage VAE par tuiles, fichier mp3 V0 (préfixe `audio/audio_minimax_music3`).
+
+```ts
+import { generateMiniMaxMusic3, MINIMAX_MUSIC3_DEFAULTS } from "comfyui-client";
+
+const paths = await generateMiniMaxMusic3({
+  ...MINIMAX_MUSIC3_DEFAULTS,
+  caption: "Global Metadata\n…\n\nVocal Details\n…\n\nArrangement\n…",
+  lyrics: "[Verse]\n…\n\n[Chorus]\n…",
+}, settings);
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `caption` | — | `MiniMaxMusic3TextEncode.caption` : sections `Global Metadata`, `Vocal Details`, `Arrangement` |
+| `lyrics` | — | `MiniMaxMusic3TextEncode.lyrics` : paroles balisées (`[Verse]`, `[Chorus]`, `[Instrumental]`…) ; vide pour un instrumental |
+| `seed` | `0` | `SeedNode`, partagé par l'encodeur et le `KSampler` |
+| `maxDuration` | `60` | `max_duration` en secondes (≤ 360) ; le modèle peut finir avant |
+| `steps` | `30` | `KSampler` |
+| `cfg` | `1.7` | `KSampler` |
+| `cfgScale` | `1.7` | `MiniMaxMusic3TextEncode.cfg_scale` |
+| `topK` | `50` | `MiniMaxMusic3TextEncode.top_k` |
+
+Le skill `docs/MiniMax-Music3-main/skills/music-caption-rewriter` explique comment écrire la description à partir des modèles par style. `bun example:music` lance `src/example-music.ts`, un morceau orchestral épique écrit d'après `index-cinematic-orchestral-epic.md`.
+
+Fichiers côté serveur ([Comfy-Org/MiniMax-Music-3](https://huggingface.co/Comfy-Org/MiniMax-Music-3)) : UNET `minimax_music3_dit_fp16.safetensors`, CLIP `minimax_music3_text_encoder_pruned_int8_convrot.safetensors` (type `minimax`), VAE `minimax_music3_dav.safetensors`.
+
+`runGraph` lit les fichiers rangés sous `images` (images et vidéos) et sous `audio` dans l'historique.
+
+Voir le skill de MiniMax : https://github.com/MiniMax-AI/MiniMax-Music3/blob/main/skills/music-caption-rewriter/SKILL.md
 
 ## Lire le graphe dans un PNG
 

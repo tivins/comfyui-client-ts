@@ -4,12 +4,15 @@ import {
   Aspect,
   DEFAULT_SERVER,
   KREA2_DEFAULTS,
+  MINIMAX_MUSIC3_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
   Sampler,
   Scheduler,
   buildKrea2Prompt,
+  buildMiniMaxMusic3Prompt,
   buildWan22Prompt,
   generateKrea2,
+  generateMiniMaxMusic3,
   generateWan22,
   readPngMetadata,
   readPngMetadataFile,
@@ -31,6 +34,9 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof readPngMetadataFile).toBe("function");
   expect(typeof buildWan22Prompt).toBe("function");
   expect(typeof generateWan22).toBe("function");
+  expect(MINIMAX_MUSIC3_DEFAULTS.steps).toBe(30);
+  expect(typeof buildMiniMaxMusic3Prompt).toBe("function");
+  expect(typeof generateMiniMaxMusic3).toBe("function");
   expect(() => silentLogger.log("rien")).not.toThrow();
 });
 

@@ -11,14 +11,14 @@ const POLL_MS = 2000;
 const PROGRESS_LOG_MS = 15_000;
 const TIMEOUT_MS = 30 * 60 * 1000;
 
-type HistoryImage = {
+type HistoryFile = {
     filename: string;
     subfolder: string;
     type: string;
 };
 
 type HistoryEntry = {
-    outputs?: Record<string, { images?: HistoryImage[] }>;
+    outputs?: Record<string, { images?: HistoryFile[]; audio?: HistoryFile[] }>;
     status?: {
         completed?: boolean;
         status_str?: string;
@@ -29,7 +29,7 @@ type HistoryEntry = {
 export type GenerateSettings = {
     server?: string;
     outputDir?: string;
-    /** Après téléchargement, retire l'image de l'historique et le prompt de la file. Le fichier dans `output/` reste. */
+    /** Après téléchargement, retire le fichier de l'historique et le prompt de la file. Le fichier dans `output/` reste. */
     deleteFromServer?: boolean;
     /** Suivi de la génération. Par défaut, rien n'est affiché. `console` convient. */
     logger?: Logger;
@@ -87,22 +87,18 @@ async function waitForHistory(base: string, promptId: string, logger: Logger): P
 }
 
 /**
- * Fichiers produits par les nœuds de sortie.
+ * Fichiers produits par les nœuds de sortie : clés `images` et `audio`.
  *
- * Doute : seule la clé `images` est lue. Pour `SaveVideo` (Wan 2.2), la
- * vidéo est bien récupérée à l'usage, ce qui laisse penser que ComfyUI la
- * range aussi sous `images` (avec `animated`). Ce n'est pas vérifié dans
- * le code de ComfyUI : si une version la range ailleurs (`videos`, `gifs`…),
- * `runGraph` lèvera « Aucune image dans l'historique ».
+ * `SaveVideo` (Wan 2.2) range sa vidéo sous `images`, avec `animated`
+ * (`PreviewVideo` dans `comfy_api/latest/_ui.py`). `SaveAudio…` (MiniMax
+ * Music 3) range ses fichiers sous `audio`.
  */
-function collectImages(entry: HistoryEntry): HistoryImage[] {
-    const images: HistoryImage[] = [];
+function collectFiles(entry: HistoryEntry): HistoryFile[] {
+    const files: HistoryFile[] = [];
     for (const output of Object.values(entry.outputs ?? {})) {
-        for (const image of output.images ?? []) {
-            images.push(image);
-        }
+        files.push(...(output.images ?? []), ...(output.audio ?? []));
     }
-    return images;
+    return files;
 }
 
 /** Vide l'historique des prompts terminés. La file en attente et le prompt en cours restent. */
@@ -134,17 +130,17 @@ async function deleteFromServer(base: string, promptId: string): Promise<void> {
     await postDelete(base, "queue", promptId);
 }
 
-async function downloadImage(base: string, image: HistoryImage, directory: string): Promise<string> {
+async function downloadFile(base: string, file: HistoryFile, directory: string): Promise<string> {
     const query = new URLSearchParams({
-        filename: image.filename,
-        subfolder: image.subfolder,
-        type: image.type,
+        filename: file.filename,
+        subfolder: file.subfolder,
+        type: file.type,
     });
     const response = await fetch(`${base}/view?${query}`);
     if (!response.ok) {
-        throw new Error(`GET /view ${image.filename} a répondu ${response.status}`);
+        throw new Error(`GET /view ${file.filename} a répondu ${response.status}`);
     }
-    const target = join(directory, Date.now() + '-' + image.filename);
+    const target = join(directory, Date.now() + '-' + file.filename);
     await Bun.write(target, await response.bytes());
     return target;
 }
@@ -163,15 +159,15 @@ export async function runGraph(graph: ApiPrompt, settings: GenerateSettings = {}
     logger.log(`[comfyui] en file`, promptId);
 
     const entry = await waitForHistory(base, promptId, logger);
-    const images = collectImages(entry);
-    if (images.length === 0) {
-        throw new Error(`Aucune image dans l'historique de ${promptId}`);
+    const files = collectFiles(entry);
+    if (files.length === 0) {
+        throw new Error(`Aucun fichier dans l'historique de ${promptId}`);
     }
 
     await mkdir(outputDir, {recursive: true});
     const paths: string[] = [];
-    for (const image of images) {
-        const path = await downloadImage(base, image, outputDir);
+    for (const file of files) {
+        const path = await downloadFile(base, file, outputDir);
         logger.log(`[comfyui] enregistré`, path);
         paths.push(path);
     }

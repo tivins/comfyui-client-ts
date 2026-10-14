@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0 — 2026-10-14
+
+`generateMiniMaxMusic3` génère un morceau (mp3) avec MiniMax Music 3. `buildMiniMaxMusic3Prompt` reproduit le graphe exporté de l'interface (`docs/workflow_audio_minimax_music_3.json`). `MiniMaxMusic3Options` porte `caption`, `lyrics`, `seed`, `maxDuration`, `steps`, `cfg`, `cfgScale` et `topK` ; `MINIMAX_MUSIC3_DEFAULTS` donne les valeurs du workflow (60 s, 30 pas, cfg 1.7, top_k 50). `meta` va dans le `_meta` de l'UNET (`37:6`).
+
+`runGraph` télécharge aussi les fichiers rangés sous `audio` dans l'historique, en plus de `images`. Sans fichier, l'erreur devient « Aucun fichier dans l'historique ».
+
+`bun example:music` lance `src/example-music.ts` : un morceau orchestral épique avec chœur, dont la description suit le skill `music-caption-rewriter`.
+
 ## 0.12.0 — 2026-10-13
 
 Rangement. Le code commun à tous les modèles passe de `qwen-image.ts` à `client.ts` (`runGraph`, `clearHistory`, `GenerateSettings`). Chaque modèle a son fichier dans `src/models/` : `qwen-image.ts`, `krea2.ts` et `wan22.ts`, chacun avec ses défauts, ses options, son graphe et sa fonction `generate…`. `workflow.ts` ne garde que les types du graphe, `Aspect`, `Sampler`, `Scheduler`, `LoRA`, `chainLoras` et `applyMeta`. Les noms exportés par `"comfyui-client"` ne changent pas, sauf ceux du logger.
