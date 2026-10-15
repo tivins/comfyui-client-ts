@@ -1,6 +1,6 @@
 {
   "name": "comfyui-client",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,6 +10,7 @@
     "generate": "bun src/generate.ts",
     "example": "bun src/example.ts",
     "example:music": "bun src/example-music.ts",
+    "batch-music": "bun src/batch-music.ts",
     "test": "bun test"
   }
 }

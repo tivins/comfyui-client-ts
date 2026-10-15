@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0 — 2026-10-15
+
+`bun batch-music <playlist.json>` (`src/batch-music.ts`) génère une playlist MiniMax Music 3 et garde autant de morceaux par piste qu'il y a de `seeds`, tour par tour. Les fichiers `<id>_s<graine>.mp3` vont dans `output/music/<nom>/`. Un morceau sous `minDuration` part dans `rejected/` et la graine suivante est essayée (`retries`, 2 par défaut). Un morceau arrêté par `maxDuration` est gardé et signalé. Les morceaux gardés sont égalisés à `loudness` LUFS (−16 par défaut, crête −1,5 dBTP) avec `ffmpeg loudnorm` en deux passages. Les fichiers déjà présents sont sautés ; un échec n'arrête pas la suite ; chaque essai est noté dans `report.tsv`. Options `--out`, `--only`, `--count`, `--server`, `--dry-run`. `runBatch` prend ses dépendances (génération, durée, égalisation) en argument pour les tests.
+
+`playlists/focus.json` : 12 descriptions instrumentales pour travailler, écrites selon le skill `music-caption-rewriter`, 3 morceaux par piste, entre 90 et 240 s, paroles faites de 22 balises (`[Intro]`, `[Instrumental]`, `[Solo]`, `[Bridge]`, `[Outro]`) : le modèle s'arrête plus tard quand il y a plus de balises.
+
 ## 0.13.0 — 2026-10-14
 
 `generateMiniMaxMusic3` génère un morceau (mp3) avec MiniMax Music 3. `buildMiniMaxMusic3Prompt` reproduit le graphe exporté de l'interface (`docs/workflow_audio_minimax_music_3.json`). `MiniMaxMusic3Options` porte `caption`, `lyrics`, `seed`, `maxDuration`, `steps`, `cfg`, `cfgScale` et `topK` ; `MINIMAX_MUSIC3_DEFAULTS` donne les valeurs du workflow (60 s, 30 pas, cfg 1.7, top_k 50). `meta` va dans le `_meta` de l'UNET (`37:6`).

@@ -270,6 +270,53 @@ Le skill `docs/MiniMax-Music3-main/skills/music-caption-rewriter` explique comme
 
 Fichiers côté serveur ([Comfy-Org/MiniMax-Music-3](https://huggingface.co/Comfy-Org/MiniMax-Music-3)) : UNET `minimax_music3_dit_fp16.safetensors`, CLIP `minimax_music3_text_encoder_pruned_int8_convrot.safetensors` (type `minimax`), VAE `minimax_music3_dav.safetensors`.
 
+### Générer une playlist
+
+`bun batch-music <playlist.json>` génère les morceaux d'une playlist l'un après l'autre et en garde autant par piste qu'il y a de `seeds`. Les fichiers s'appellent `<id>_s<graine>.mp3`, dans `output/music/<nom de la playlist>/` par défaut. La génération avance tour par tour : chaque piste reçoit son premier morceau, puis son deuxième, etc. ; les premiers fichiers couvrent donc tous les styles.
+
+- **Durée minimale** : un morceau plus court que `minDuration` part dans `rejected/`, et la graine suivante est essayée, `retries` fois au plus (2 par défaut). Après les `seeds` de la playlist, les graines continuent à partir de la plus grande déjà vue.
+- **Plafond** : un morceau qui atteint `maxDuration` est gardé, mais signalé, car sa fin est sans doute coupée.
+- **Volume** : chaque morceau gardé est égalisé à `loudness` LUFS (−16 par défaut, crête à −1,5 dBTP) par deux passages `ffmpeg loudnorm`, puis réencodé en mp3 V0. Les métadonnées, dont le graphe ComfyUI, sont gardées. `"loudness": null` laisse le fichier tel quel.
+- **Reprise** : un fichier déjà présent, gardé ou rejeté, n'est pas refait. Une génération interrompue reprend où elle s'est arrêtée.
+- **Échecs** : un échec est noté et la suite continue avec la piste suivante.
+- **Rapport** : chaque essai ajoute une ligne à `report.tsv` : fichier, graine, durée, `ok` / `short` / `cut`, temps de calcul en secondes.
+
+Il faut `ffmpeg` et `ffprobe` dans le `PATH`.
+
+```sh
+bun batch-music playlists/focus.json --dry-run
+bun batch-music playlists/focus.json --only lofi-rain,jazz-trio --count 5
+```
+
+| Option | Défaut |
+| --- | --- |
+| `--out` | `output/music/<nom>` |
+| `--only` | toutes les pistes |
+| `--count` | nombre de `seeds` de la playlist : morceaux à garder par piste |
+| `--server` | `COMFY_URL`, sinon `http://127.0.0.1:8188` |
+| `--dry-run` | liste ce qui reste à générer |
+
+```json
+{
+  "seeds": [1, 2, 3],
+  "lyrics": "[Instrumental]",
+  "options": { "maxDuration": 240 },
+  "minDuration": 90,
+  "retries": 2,
+  "loudness": -16,
+  "tracks": [
+    { "id": "lofi-rain", "caption": "Global Metadata\n…" },
+    { "id": "piano", "caption": "…", "lyrics": "…", "options": { "steps": 20 } }
+  ]
+}
+```
+
+`options` reprend les champs de `MiniMaxMusic3Options` sauf `caption`, `lyrics` et `seed`. Une piste peut remplacer `lyrics` et `options`. `meta` reçoit `playlist`, `track` et `seed`.
+
+`playlists/focus.json` : 12 styles instrumentaux pour travailler (lo-fi, ambient, piano néo-classique, trio jazz, downtempo, synthwave, post-rock, guitare acoustique, deep house minimale, bossa nova, electronica, kalimba), 3 morceaux par piste, entre 90 et 240 s.
+
+Le modèle décide seul où le morceau s'arrête ; `maxDuration` n'est qu'un plafond. Pour un instrumental, la durée suit surtout le nombre de balises dans les paroles. Mesures sur la piste `lofi-rain` : paroles vides, environ 28 s ; `[Instrumental]` seul, 26 à 50 s ; 10 balises, 87 à 120 s ; 22 balises (celles de `focus.json`), 61, 148 et 162 s selon la graine. Annoncer « trois minutes » dans la description ne change rien.
+
 `runGraph` lit les fichiers rangés sous `images` (images et vidéos) et sous `audio` dans l'historique.
 
 Voir le skill de MiniMax : https://github.com/MiniMax-AI/MiniMax-Music3/blob/main/skills/music-caption-rewriter/SKILL.md
