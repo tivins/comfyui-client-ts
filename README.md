@@ -90,7 +90,7 @@ const paths = await generateQwenImage(options, settings);
 await generateQwenImage(options, { ...settings, logger: console });
 ```
 
-`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen, Krea 2 et MiniMax Music 3, l'image d'entrée pour Wan 2.2). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` le relit : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
+`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen, Krea 2 et MiniMax Music 3, l'image d'entrée pour Wan 2.2). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` (images) et `readMp3Metadata` (morceaux) le relisent : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
 
 ## Vider l'historique
 
@@ -332,6 +332,18 @@ const { prompt, workflow } = await readPngMetadataFile("/tmp/comfy/out/image.png
 ```
 
 `readPngMetadata` prend les octets du fichier. Les chunks `tEXt`, `zTXt`, `iTXt` et `comf` sont lus. Un chunk absent vaut `null`.
+
+## Lire le graphe dans un mp3
+
+ComfyUI écrit les mêmes `prompt` et `workflow` dans le tag ID3v2 du mp3, en frames `TXXX`. L'égalisation de `batch-music` les garde.
+
+```ts
+import { readMp3MetadataFile } from "comfyui-client";
+
+const { prompt } = await readMp3MetadataFile("output/music/focus/electronica-glow_s1.mp3");
+```
+
+`readMp3MetadataFile` ne lit que le tag, pas l'audio. `readMp3Metadata` prend les octets du fichier. ID3v2.3 et 2.4 sont lus (latin-1, UTF-16, UTF-8, désynchronisation) ; les frames compressées ou chiffrées sont ignorées. Un mp3 sans tag, ou un tag absent, donne `null`.
 
 ## Tests
 

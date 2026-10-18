@@ -9,6 +9,9 @@ export {uploadImage} from "./upload";
 export {readPngMetadata, readPngMetadataFile} from "./png-metadata";
 export type {PngMetadata} from "./png-metadata";
 
+export {readMp3Metadata, readMp3MetadataFile} from "./mp3-metadata";
+export type {Mp3Metadata} from "./mp3-metadata";
+
 export {
     Aspect,
     ASPECT_RATIOS,

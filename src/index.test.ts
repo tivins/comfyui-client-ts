@@ -14,6 +14,8 @@ import {
   generateKrea2,
   generateMiniMaxMusic3,
   generateWan22,
+  readMp3Metadata,
+  readMp3MetadataFile,
   readPngMetadata,
   readPngMetadataFile,
   silentLogger,
@@ -32,6 +34,8 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof generateKrea2).toBe("function");
   expect(typeof readPngMetadata).toBe("function");
   expect(typeof readPngMetadataFile).toBe("function");
+  expect(typeof readMp3Metadata).toBe("function");
+  expect(typeof readMp3MetadataFile).toBe("function");
   expect(typeof buildWan22Prompt).toBe("function");
   expect(typeof generateWan22).toBe("function");
   expect(MINIMAX_MUSIC3_DEFAULTS.steps).toBe(30);

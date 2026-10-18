@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0 — 2026-10-18
+
+`readMp3Metadata` lit les tags `prompt` (graphe API) et `workflow` (graphe UI) d'un mp3 ComfyUI : des frames ID3v2 `TXXX`, en ID3v2.3 ou 2.4, encodées en latin-1, UTF-16 ou UTF-8, désynchronisées ou non. Les frames compressées ou chiffrées sont ignorées. Un mp3 sans tag, ou un tag absent, donne `null`. `readMp3MetadataFile` fait la même lecture depuis un chemin, sans lire l'audio. Le `meta` passé à `generateMiniMaxMusic3` se relit ainsi dans le `_meta` de l'UNET (`37:6`).
+
 ## 0.14.0 — 2026-10-15
 
 `bun batch-music <playlist.json>` (`src/batch-music.ts`) génère une playlist MiniMax Music 3 et garde autant de morceaux par piste qu'il y a de `seeds`, tour par tour. Les fichiers `<id>_s<graine>.mp3` vont dans `output/music/<nom>/`. Un morceau sous `minDuration` part dans `rejected/` et la graine suivante est essayée (`retries`, 2 par défaut). Un morceau arrêté par `maxDuration` est gardé et signalé. Les morceaux gardés sont égalisés à `loudness` LUFS (−16 par défaut, crête −1,5 dBTP) avec `ffmpeg loudnorm` en deux passages. Les fichiers déjà présents sont sautés ; un échec n'arrête pas la suite ; chaque essai est noté dans `report.tsv`. Options `--out`, `--only`, `--count`, `--server`, `--dry-run`. `runBatch` prend ses dépendances (génération, durée, égalisation) en argument pour les tests.
