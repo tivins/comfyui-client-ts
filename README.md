@@ -8,6 +8,7 @@ Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax 
 | `src/logger.ts` | `Logger`, `silentLogger` |
 | `src/workflow.ts` | types du graphe API, `Aspect`, `Sampler`, `Scheduler`, `LoRA` |
 | `src/models/*.ts` | un fichier par modèle : défauts, options, graphe, fonction `generate…` |
+| `workflows/*.json` | graphes exportés de l'interface, que les tests comparent aux graphes produits |
 
 Le graphe reprend le workflow UI `image_qwen_image_2_1_t2i_001_simple`. `POST /prompt` reçoit les textes dans `inputs.prompt` et `inputs.negative_prompt` du nœud `TextEncodeQwenImage21`.
 
@@ -25,10 +26,24 @@ Le budget de pixels est fixé à 1 mégapixel. `cfg` et `denoise` du `KSampler` 
 
 ## Dépendance
 
+Ce paquet a son propre dépôt git, `vps:/data/git/comfyui-client-ts`. Le dépôt `vps:/data/git/comfyui` garde l'installation de ComfyUI : scripts de téléchargement des modèles, custom node `comfyui-delete-output`, documentation. Sur la machine de travail, ce paquet est cloné dans `/data/projects/comfyui-client-ts`.
+
+Sur la même machine, par chemin :
+
 ```json
 {
   "dependencies": {
-    "comfyui-client": "file:../client-ts"
+    "comfyui-client": "file:/data/projects/comfyui-client-ts"
+  }
+}
+```
+
+Ailleurs, par git (`vps` est l'alias de `~/.ssh/config`), figé sur une version (un tag `v<version>` par version publiée dans le CHANGELOG) :
+
+```json
+{
+  "dependencies": {
+    "comfyui-client": "git+ssh://vps/data/git/comfyui-client-ts#v0.18.2"
   }
 }
 ```
@@ -85,7 +100,7 @@ const paths = await generateQwenImage(options, settings);
 
 `deleteFromServer` efface les fichiers produits du dossier `output` du serveur (`POST /api/output/delete`), puis retire le prompt de l'historique (`POST /history`) et de la file (`POST /queue`), avec `{ delete: [promptId] }`. Seuls les fichiers `type: "output"` sont effacés : ceux de `temp` restent, ComfyUI vide ce dossier au démarrage.
 
-ComfyUI n'a pas de route pour effacer un fichier. `POST /api/output/delete` vient du custom node `comfyui-delete-output`, rangé dans `custom_nodes/` à la racine de ce dépôt. `install_comfyui.sh` le lie dans `ComfyUI/custom_nodes/`. À la main :
+ComfyUI n'a pas de route pour effacer un fichier. `POST /api/output/delete` vient du custom node `comfyui-delete-output`, rangé dans `custom_nodes/` du dépôt comfyui. `install_comfyui.sh` le lie dans `ComfyUI/custom_nodes/`. À la main :
 
 ```sh
 ln -sfn /data/softwares/comfyui/custom_nodes/comfyui-delete-output /data/softwares/comfyui/ComfyUI/custom_nodes/comfyui-delete-output
@@ -199,7 +214,7 @@ const paths = await generateKrea2(options, settings);
 
 ## Krea 2 avec image de référence
 
-`buildKrea2EditPrompt` reprend le workflow `krea2_identity_edit` du paquet de nœuds [comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit). La LoRA Identity Edit replace la personne de l'image de référence dans la scène décrite par la consigne. Le graphe d'origine, exporté depuis l'interface, est `docs/workflow_krea2_identity_edit_mei_laughing.json` ; un test vérifie que le graphe produit est le même.
+`buildKrea2EditPrompt` reprend le workflow `krea2_identity_edit` du paquet de nœuds [comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit). La LoRA Identity Edit replace la personne de l'image de référence dans la scène décrite par la consigne. Le graphe d'origine, exporté depuis l'interface, est `workflows/workflow_krea2_identity_edit_mei_laughing.json` ; un test vérifie que le graphe produit est le même.
 
 À installer côté serveur, en plus des fichiers Krea 2 :
 
@@ -256,7 +271,7 @@ Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors
 
 ## MiniMax Music 3
 
-`buildMiniMaxMusic3Prompt` reprend le workflow UI `audio_minimax_music_3` (`docs/workflow_audio_minimax_music_3.json` ; un test vérifie que le graphe produit est le même). `MiniMaxMusic3TextEncode` reçoit la description et les paroles et renvoie la durée réelle du morceau, qui dimensionne le latent. `KSampler` euler / simple, négatif à zéro, décodage VAE par tuiles, fichier mp3 V0 (préfixe `audio/audio_minimax_music3`).
+`buildMiniMaxMusic3Prompt` reprend le workflow UI `audio_minimax_music_3` (`workflows/workflow_audio_minimax_music_3.json` ; un test vérifie que le graphe produit est le même). `MiniMaxMusic3TextEncode` reçoit la description et les paroles et renvoie la durée réelle du morceau, qui dimensionne le latent. `KSampler` euler / simple, négatif à zéro, décodage VAE par tuiles, fichier mp3 V0 (préfixe `audio/audio_minimax_music3`).
 
 ```ts
 import { generateMiniMaxMusic3, MINIMAX_MUSIC3_DEFAULTS } from "comfyui-client";
@@ -279,7 +294,7 @@ const paths = await generateMiniMaxMusic3({
 | `cfgScale` | `1.7` | `MiniMaxMusic3TextEncode.cfg_scale` |
 | `topK` | `50` | `MiniMaxMusic3TextEncode.top_k` |
 
-Le skill `docs/MiniMax-Music3-main/skills/music-caption-rewriter` explique comment écrire la description à partir des modèles par style. `bun example:music` lance `src/example-music.ts`, un morceau orchestral épique écrit d'après `index-cinematic-orchestral-epic.md`.
+Le skill `docs/MiniMax-Music3-main/skills/music-caption-rewriter` (dans le dépôt comfyui, hors git) explique comment écrire la description à partir des modèles par style. `bun example:music` lance `src/example-music.ts`, un morceau orchestral épique écrit d'après `index-cinematic-orchestral-epic.md`.
 
 Fichiers côté serveur ([Comfy-Org/MiniMax-Music-3](https://huggingface.co/Comfy-Org/MiniMax-Music-3)) : UNET `minimax_music3_dit_fp16.safetensors`, CLIP `minimax_music3_text_encoder_pruned_int8_convrot.safetensors` (type `minimax`), VAE `minimax_music3_dav.safetensors`.
 
@@ -336,7 +351,7 @@ Voir le skill de MiniMax : https://github.com/MiniMax-AI/MiniMax-Music3/blob/mai
 
 ## Agrandir une image (SeedVR2)
 
-`buildSeedVR2Prompt` reprend le modèle de workflow « Agrandissement d'image : SeedVR2 7B Int8 » (`docs/workflow_utility_seedvr2_7b_int8_upscale_image.json`, sans le nœud `ImageCompare` de l'interface ; un test vérifie que le graphe produit est le même). L'image est agrandie en lanczos à la taille voulue, puis SeedVR2 la restaure en un seul pas : il recrée le détail fin (poils, cheveux, textures) sans changer le contenu. Encodage et décodage VAE par tuiles.
+`buildSeedVR2Prompt` reprend le modèle de workflow « Agrandissement d'image : SeedVR2 7B Int8 » (`workflows/workflow_utility_seedvr2_7b_int8_upscale_image.json`, sans le nœud `ImageCompare` de l'interface ; un test vérifie que le graphe produit est le même). L'image est agrandie en lanczos à la taille voulue, puis SeedVR2 la restaure en un seul pas : il recrée le détail fin (poils, cheveux, textures) sans changer le contenu. Encodage et décodage VAE par tuiles.
 
 `generateSeedVR2Upscale` envoie d'abord l'image locale `image` avec `uploadImage`, puis le graphe :
 
@@ -360,7 +375,7 @@ const paths = await generateSeedVR2Upscale({
 | `unetName` | `seedvr2_7b_int8_convrot.safetensors` | `UNETLoader` ; `seedvr2_3b_int8_convrot.safetensors` est plus léger |
 | `vaeName` | `seedvr2_ema_vae_fp16.safetensors` | `VAELoader` |
 
-Fichiers côté serveur : `../download_seedvr2.sh` les télécharge dans `models/` (8,8 Go). Sur une RTX 5060 Ti 16 Go, un ×4 de 592×448 vers 2368×1792 prend environ 6 s, modèle déjà chargé. Le préfixe des fichiers enregistrés est `SeedVR2`.
+Fichiers côté serveur : `download_seedvr2.sh`, dans le dépôt comfyui, les télécharge dans `models/` (8,8 Go). Sur une RTX 5060 Ti 16 Go, un ×4 de 592×448 vers 2368×1792 prend environ 6 s, modèle déjà chargé. Le préfixe des fichiers enregistrés est `SeedVR2`.
 
 ## Lire le graphe dans un PNG
 
@@ -398,8 +413,8 @@ Vérification des types (`@types/bun` et `typescript` sont en devDependencies, `
 bun run typecheck
 ```
 
-Le custom node a ses propres tests, qui ne chargent pas ComfyUI :
+Le custom node, dans le dépôt comfyui, a ses propres tests, qui ne chargent pas ComfyUI :
 
 ```sh
-../venv/bin/python ../custom_nodes/comfyui-delete-output/test_output_files.py
+cd /data/softwares/comfyui && venv/bin/python custom_nodes/comfyui-delete-output/test_output_files.py
 ```

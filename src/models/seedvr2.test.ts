@@ -36,7 +36,7 @@ function withoutMeta(graph: ApiPrompt) {
 describe("buildSeedVR2Prompt", () => {
   test("reproduit le graphe exporté depuis l'interface, sans ImageCompare", () => {
     const exported = JSON.parse(
-      readFileSync(new URL("../../../docs/workflow_utility_seedvr2_7b_int8_upscale_image.json", import.meta.url), "utf8"),
+      readFileSync(new URL("../../workflows/workflow_utility_seedvr2_7b_int8_upscale_image.json", import.meta.url), "utf8"),
     ) as ApiPrompt;
     delete exported["65"];
     exported["9"]!.inputs.filename_prefix = "SeedVR2";

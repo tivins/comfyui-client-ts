@@ -256,7 +256,7 @@ function withoutMeta(graph: ApiPrompt) {
 describe("buildKrea2EditPrompt", () => {
   test("reproduit le graphe exporté depuis l'interface", () => {
     const exported = JSON.parse(
-      readFileSync(new URL("../../../docs/workflow_krea2_identity_edit_mei_laughing.json", import.meta.url), "utf8"),
+      readFileSync(new URL("../../workflows/workflow_krea2_identity_edit_mei_laughing.json", import.meta.url), "utf8"),
     ) as ApiPrompt;
     // L'interface passe par un ResolutionSelector (2:3, 0.5 Mpx) ; le client donne la taille.
     delete exported["83"];

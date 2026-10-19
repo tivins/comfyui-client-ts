@@ -62,7 +62,7 @@ function resizeInputs(resize: SeedVR2Resize): Record<string, ApiInput> {
 
 /**
  * Graphe API du modèle de workflow « Agrandissement d'image : SeedVR2 7B Int8 »
- * (`docs/workflow_utility_seedvr2_7b_int8_upscale_image.json`), sans le nœud
+ * (`workflows/workflow_utility_seedvr2_7b_int8_upscale_image.json`), sans le nœud
  * `ImageCompare` qui ne sert qu'à l'interface.
  *
  * L'image (1) est d'abord agrandie en lanczos à la taille voulue (66:57), puis

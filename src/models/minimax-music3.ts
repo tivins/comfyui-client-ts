@@ -30,7 +30,7 @@ export type MiniMaxMusic3Options = {
 
 /**
  * Graphe API du workflow UI `audio_minimax_music_3`
- * (`docs/workflow_audio_minimax_music_3.json`).
+ * (`workflows/workflow_audio_minimax_music_3.json`).
  *
  * `MiniMaxMusic3TextEncode` (`37:13`) produit le conditionnement et la durée
  * réelle du morceau, qui dimensionne le latent vide. Le négatif est le

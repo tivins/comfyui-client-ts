@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.2 — 2026-10-20
+
+Le paquet sort du dépôt comfyui et a son propre dépôt git (`vps:/data/git/comfyui-client-ts`), cloné dans `/data/projects/comfyui-client-ts` : les projets qui le prennent par chemin passent à `file:/data/projects/comfyui-client-ts`. Un autre projet peut aussi le prendre par git, figé sur un tag `v<version>`. Les graphes exportés que lisent les tests passent de `../docs/` à `workflows/` (Krea 2 Identity Edit, MiniMax Music 3, SeedVR2). Le README dit ce qui reste dans le dépôt comfyui : scripts de téléchargement des modèles, custom node `comfyui-delete-output`, skill MiniMax. Aucun changement de code.
+
 ## 0.18.1 — 2026-10-20
 
 `@types/bun` et `typescript` passent en devDependencies (`bun.lock` ajouté) : `tsconfig.json` demandait les types de Bun sans les installer, et `tsc` ne tournait pas. `bun run typecheck` lance `tsc --noEmit`. Les erreurs qu'il trouvait sont corrigées : `allowImportingTsExtensions` pour les imports en `.ts` des tests, mocks de `fetch` castés en `typeof fetch` comme `fakeServer`, et `env` de `parseBatchArgs` et `parseGenerateArgs` typé `Readonly<Record<string, string | undefined>>`, ce qui accepte `process.env`. Aucun changement de comportement.

@@ -38,7 +38,7 @@ function withoutMeta(graph: ApiPrompt) {
 describe("buildMiniMaxMusic3Prompt", () => {
   test("reproduit le graphe exporté depuis l'interface", () => {
     const exported = JSON.parse(
-      readFileSync(new URL("../../../docs/workflow_audio_minimax_music_3.json", import.meta.url), "utf8"),
+      readFileSync(new URL("../../workflows/workflow_audio_minimax_music_3.json", import.meta.url), "utf8"),
     ) as ApiPrompt;
     const encode = exported["37:13"]!.inputs;
 

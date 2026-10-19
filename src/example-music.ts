@@ -1,7 +1,7 @@
 import {type GenerateSettings} from "./client";
 import {generateMiniMaxMusic3, MINIMAX_MUSIC3_DEFAULTS, type MiniMaxMusic3Options} from "./models/minimax-music3";
 
-// Caption écrite selon `docs/MiniMax-Music3-main/skills/music-caption-rewriter`,
+// Caption écrite selon `docs/MiniMax-Music3-main/skills/music-caption-rewriter` (dépôt comfyui),
 // famille `index-cinematic-orchestral-epic.md` (orchestre + chœur, hymne épique).
 const caption = `Global Metadata
 Cinematic orchestral epic with choral anthem elements. Around 84 BPM, D minor, moving to the relative F major in the final chorus. The emotional arc starts in cold, distant stillness, gathers resolve through a narrative verse, breaks into a defiant, soaring chorus, falls back to a fragile, reflective bridge, then rises to a triumphant final climax that settles into quiet awe. Trailer-scale soundstage: wide concert-hall reverb, deep low end from low strings and taiko, bright high strings and cymbals on top; spacious and dynamic in the quiet sections, dense and powerful at the peaks.
