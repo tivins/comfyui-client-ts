@@ -392,6 +392,12 @@ const { prompt } = await readMp3MetadataFile("output/music/focus/electronica-glo
 bun test
 ```
 
+Vérification des types (`@types/bun` et `typescript` sont en devDependencies, `bun install` les installe) :
+
+```sh
+bun run typecheck
+```
+
 Le custom node a ses propres tests, qui ne chargent pas ComfyUI :
 
 ```sh

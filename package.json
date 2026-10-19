@@ -1,6 +1,6 @@
 {
   "name": "comfyui-client",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -11,6 +11,11 @@
     "example": "bun src/example.ts",
     "example:music": "bun src/example-music.ts",
     "batch-music": "bun src/batch-music.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.3",
+    "typescript": "^7.0.2"
   }
 }

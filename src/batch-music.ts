@@ -341,7 +341,7 @@ function readFlag(argv: readonly string[], name: string): string | undefined {
 export type BatchArgs = Omit<BatchRun, "name"> & { playlist: string; dryRun: boolean };
 
 /** `argv` sans `bun` ni le script : le premier argument libre est le fichier de playlist. */
-export function parseBatchArgs(argv: readonly string[], env: { COMFY_URL?: string } = {}): BatchArgs {
+export function parseBatchArgs(argv: readonly string[], env: Readonly<Record<string, string | undefined>> = {}): BatchArgs {
     const valueFlags = ["--out", "--only", "--count", "--server"];
     const playlist = argv.find((arg, index) => !arg.startsWith("--") && !valueFlags.includes(argv[index - 1] ?? ""));
     if (playlist === undefined) {

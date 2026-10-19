@@ -48,7 +48,7 @@ describe("generateKrea2", () => {
     directories.push(outputDir);
     let postedPrompt = "";
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       if (url.endsWith("/prompt")) {
         postedPrompt = String(init?.body);
@@ -68,7 +68,7 @@ describe("generateKrea2", () => {
         return new Response(new Uint8Array([1, 2, 3]));
       }
       throw new Error(`requête inattendue : ${url}`);
-    };
+    }) as typeof fetch;
 
     const paths = await generateKrea2(options, {
       server: "http://127.0.0.1:9",
@@ -95,7 +95,7 @@ describe("generateKrea2Edit", () => {
     const calls: string[] = [];
     let postedPrompt = "";
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       calls.push(url.replace("http://127.0.0.1:9", ""));
       if (url.endsWith("/upload/image")) {
@@ -119,7 +119,7 @@ describe("generateKrea2Edit", () => {
         return new Response(new Uint8Array([1, 2, 3]));
       }
       throw new Error(`requête inattendue : ${url}`);
-    };
+    }) as typeof fetch;
 
     const paths = await generateKrea2Edit(
       {

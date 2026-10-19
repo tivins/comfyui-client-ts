@@ -83,7 +83,7 @@ describe("generateQwenImage", () => {
     directories.push(outputDir);
     let postedPrompt = "";
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       if (url.endsWith("/prompt")) {
         postedPrompt = String(init?.body);
@@ -103,7 +103,7 @@ describe("generateQwenImage", () => {
         return new Response(new Uint8Array([1, 2, 3]));
       }
       throw new Error(`requête inattendue : ${url}`);
-    };
+    }) as typeof fetch;
 
     const paths = await generateQwenImage(baseOptions, {
       server: "http://127.0.0.1:9",

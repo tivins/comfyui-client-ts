@@ -29,12 +29,12 @@ describe("uploadImage", () => {
     const path = await imageFile();
     let form: FormData | undefined;
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       expect(String(input)).toBe("http://127.0.0.1:9/upload/image");
       expect(init?.method).toBe("POST");
       form = init?.body as FormData;
       return Response.json({ name: "ref (1).png", subfolder: "", type: "input" });
-    };
+    }) as typeof fetch;
 
     const name = await uploadImage(path, { server: "http://127.0.0.1:9/" });
 
@@ -48,14 +48,14 @@ describe("uploadImage", () => {
 
   test("préfixe le sous-dossier", async () => {
     const path = await imageFile();
-    globalThis.fetch = async () => Response.json({ name: "ref.png", subfolder: "refs", type: "input" });
+    globalThis.fetch = (async (_input) => Response.json({ name: "ref.png", subfolder: "refs", type: "input" })) as typeof fetch;
 
     expect(await uploadImage(path, { server: "http://127.0.0.1:9" })).toBe("refs/ref.png");
   });
 
   test("échoue si le serveur refuse", async () => {
     const path = await imageFile();
-    globalThis.fetch = async () => new Response(null, { status: 400 });
+    globalThis.fetch = (async (_input) => new Response(null, { status: 400 })) as typeof fetch;
 
     expect(uploadImage(path, { server: "http://127.0.0.1:9" })).rejects.toThrow("/upload/image a répondu 400");
   });

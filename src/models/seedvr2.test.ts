@@ -93,7 +93,7 @@ describe("generateSeedVR2Upscale", () => {
     const calls: string[] = [];
     let postedPrompt = "";
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       calls.push(url.replace("http://127.0.0.1:9", ""));
       if (url.endsWith("/upload/image")) {
@@ -117,7 +117,7 @@ describe("generateSeedVR2Upscale", () => {
         return new Response(new Uint8Array([1, 2, 3]));
       }
       throw new Error(`requête inattendue : ${url}`);
-    };
+    }) as typeof fetch;
 
     const paths = await generateSeedVR2Upscale(
       { ...options, image: source },

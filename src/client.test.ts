@@ -192,7 +192,7 @@ describe("runGraph", () => {
   });
 
   test("remonte le refus de ComfyUI", async () => {
-    globalThis.fetch = async () => Response.json({ error: "bad graph" }, { status: 400 });
+    globalThis.fetch = (async (_input) => Response.json({ error: "bad graph" }, { status: 400 })) as typeof fetch;
 
     await expect(runGraph(graph, { server: "http://127.0.0.1:9" })).rejects.toThrow(
       /a refusé le graphe \(400\)/,
@@ -221,19 +221,19 @@ describe("runGraph", () => {
 describe("clearHistory", () => {
   test("vide l'historique ComfyUI", async () => {
     let body = "";
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       expect(String(input)).toBe("http://127.0.0.1:9/history");
       expect(init?.method).toBe("POST");
       body = String(init?.body);
       return new Response(null, { status: 200 });
-    };
+    }) as typeof fetch;
 
     await clearHistory("http://127.0.0.1:9/");
     expect(JSON.parse(body)).toEqual({ clear: true });
   });
 
   test("remonte le refus du serveur", async () => {
-    globalThis.fetch = async () => new Response(null, { status: 500 });
+    globalThis.fetch = (async (_input) => new Response(null, { status: 500 })) as typeof fetch;
     await expect(clearHistory("http://127.0.0.1:9")).rejects.toThrow(/POST \/history \(clear\) a répondu 500/);
   });
 });

@@ -88,7 +88,7 @@ describe("generateMiniMaxMusic3", () => {
     directories.push(outputDir);
     let postedPrompt = "";
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       if (url.endsWith("/prompt")) {
         postedPrompt = String(init?.body);
@@ -109,7 +109,7 @@ describe("generateMiniMaxMusic3", () => {
         return new Response(new Uint8Array([6, 7]));
       }
       throw new Error(`requête inattendue : ${url}`);
-    };
+    }) as typeof fetch;
 
     const paths = await generateMiniMaxMusic3(options, {
       server: "http://127.0.0.1:9",

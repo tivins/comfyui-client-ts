@@ -61,7 +61,7 @@ describe("generateWan22", () => {
     directories.push(outputDir);
     let postedPrompt = "";
 
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       if (url.endsWith("/prompt")) {
         postedPrompt = String(init?.body);
@@ -81,7 +81,7 @@ describe("generateWan22", () => {
         return new Response(new Uint8Array([4, 5]));
       }
       throw new Error(`requête inattendue : ${url}`);
-    };
+    }) as typeof fetch;
 
     const paths = await generateWan22(options, { server: "http://127.0.0.1:9", outputDir, meta: { run: "a" } });
 

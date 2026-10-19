@@ -44,7 +44,7 @@ function intFlag(argv: readonly string[], name: string, fallback: number, min: n
 
 export function parseGenerateArgs(
   argv: readonly string[],
-  env: { PROMPT?: string; NEGATIVE_PROMPT?: string; COMFY_URL?: string } = {},
+  env: Readonly<Record<string, string | undefined>> = {},
 ): { server: string; options: QwenImageOptions } {
   return {
     server: (readFlag(argv, "server") ?? env.COMFY_URL ?? DEFAULT_SERVER).replace(/\/$/, ""),

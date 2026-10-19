@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.1 — 2026-10-20
+
+`@types/bun` et `typescript` passent en devDependencies (`bun.lock` ajouté) : `tsconfig.json` demandait les types de Bun sans les installer, et `tsc` ne tournait pas. `bun run typecheck` lance `tsc --noEmit`. Les erreurs qu'il trouvait sont corrigées : `allowImportingTsExtensions` pour les imports en `.ts` des tests, mocks de `fetch` castés en `typeof fetch` comme `fakeServer`, et `env` de `parseBatchArgs` et `parseGenerateArgs` typé `Readonly<Record<string, string | undefined>>`, ce qui accepte `process.env`. Aucun changement de comportement.
+
 ## 0.18.0 — 2026-10-20
 
 `generateSeedVR2Upscale` agrandit une image avec SeedVR2 7B int8 : l'image locale est envoyée avec `uploadImage`, agrandie en lanczos, puis restaurée en un pas. `buildSeedVR2Prompt` reproduit le modèle de workflow de ComfyUI (`docs/workflow_utility_seedvr2_7b_int8_upscale_image.json`), sans le nœud `ImageCompare`. `SeedVR2Options` porte `image`, `resize` (`{ multiplier }` ou `{ longerSide }`), `colorCorrection`, `seed`, `tileSize`, `tileOverlap`, `unetName` et `vaeName`. `SEEDVR2_DEFAULTS` donne ×4, correction `lab` (le workflow d'exemple utilise `none`, aux couleurs un peu plus chaudes) et le modèle 7B. `ColorCorrection` liste les valeurs de `SeedVR2PostProcessing`.
