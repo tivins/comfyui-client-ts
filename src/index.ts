@@ -41,3 +41,6 @@ export type {Wan22Options} from "./models/wan22";
 
 export {MINIMAX_MUSIC3_DEFAULTS, buildMiniMaxMusic3Prompt, generateMiniMaxMusic3} from "./models/minimax-music3";
 export type {MiniMaxMusic3Options} from "./models/minimax-music3";
+
+export {SEEDVR2_DEFAULTS, ColorCorrection, buildSeedVR2Prompt, generateSeedVR2Upscale} from "./models/seedvr2";
+export type {SeedVR2Options, SeedVR2Resize} from "./models/seedvr2";

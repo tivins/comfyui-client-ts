@@ -6,6 +6,7 @@ import {
   KREA2_DEFAULTS,
   MINIMAX_MUSIC3_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
+  SEEDVR2_DEFAULTS,
   Sampler,
   Scheduler,
   buildKrea2Prompt,
@@ -13,6 +14,7 @@ import {
   buildWan22Prompt,
   generateKrea2,
   generateMiniMaxMusic3,
+  generateSeedVR2Upscale,
   generateWan22,
   readMp3Metadata,
   readMp3MetadataFile,
@@ -38,6 +40,8 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof readPngMetadataFile).toBe("function");
   expect(typeof readMp3Metadata).toBe("function");
   expect(typeof readMp3MetadataFile).toBe("function");
+  expect(SEEDVR2_DEFAULTS.unetName).toBe("seedvr2_7b_int8_convrot.safetensors");
+  expect(typeof generateSeedVR2Upscale).toBe("function");
   expect(typeof buildWan22Prompt).toBe("function");
   expect(typeof generateWan22).toBe("function");
   expect(MINIMAX_MUSIC3_DEFAULTS.steps).toBe(30);

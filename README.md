@@ -1,6 +1,6 @@
 # comfyui-client
 
-Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax Music 3) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
 
 | Fichier | Contenu |
 | --- | --- |
@@ -333,6 +333,34 @@ Le modèle décide seul où le morceau s'arrête ; `maxDuration` n'est qu'un pla
 `runGraph` lit les fichiers rangés sous `images` (images et vidéos) et sous `audio` dans l'historique.
 
 Voir le skill de MiniMax : https://github.com/MiniMax-AI/MiniMax-Music3/blob/main/skills/music-caption-rewriter/SKILL.md
+
+## Agrandir une image (SeedVR2)
+
+`buildSeedVR2Prompt` reprend le modèle de workflow « Agrandissement d'image : SeedVR2 7B Int8 » (`docs/workflow_utility_seedvr2_7b_int8_upscale_image.json`, sans le nœud `ImageCompare` de l'interface ; un test vérifie que le graphe produit est le même). L'image est agrandie en lanczos à la taille voulue, puis SeedVR2 la restaure en un seul pas : il recrée le détail fin (poils, cheveux, textures) sans changer le contenu. Encodage et décodage VAE par tuiles.
+
+`generateSeedVR2Upscale` envoie d'abord l'image locale `image` avec `uploadImage`, puis le graphe :
+
+```ts
+import { generateSeedVR2Upscale, SEEDVR2_DEFAULTS } from "comfyui-client";
+
+const paths = await generateSeedVR2Upscale({
+  ...SEEDVR2_DEFAULTS,
+  image: "/data/refs/cat.png",
+  resize: { longerSide: 3840 },
+});
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `image` | — | `LoadImage` : chemin local pour `generateSeedVR2Upscale`, nom côté serveur pour `buildSeedVR2Prompt` |
+| `resize` | `{ multiplier: 4 }` | `ResizeImageMaskNode` : `{ multiplier }` agrandit d'un facteur, `{ longerSide }` fixe le grand côté en pixels |
+| `colorCorrection` | `ColorCorrection.Lab` | `SeedVR2PostProcessing.color_correction_method` : `lab` (le plus fidèle), `wavelet`, `adain`, `none` (valeur du workflow d'exemple, couleurs un peu plus chaudes) |
+| `seed` | `42` | `KSampler` |
+| `tileSize`, `tileOverlap` | `512`, `128` | `VAEEncodeTiled` et `VAEDecodeTiled` : plus petit = moins de VRAM |
+| `unetName` | `seedvr2_7b_int8_convrot.safetensors` | `UNETLoader` ; `seedvr2_3b_int8_convrot.safetensors` est plus léger |
+| `vaeName` | `seedvr2_ema_vae_fp16.safetensors` | `VAELoader` |
+
+Fichiers côté serveur : `../download_seedvr2.sh` les télécharge dans `models/` (8,8 Go). Sur une RTX 5060 Ti 16 Go, un ×4 de 592×448 vers 2368×1792 prend environ 6 s, modèle déjà chargé. Le préfixe des fichiers enregistrés est `SeedVR2`.
 
 ## Lire le graphe dans un PNG
 

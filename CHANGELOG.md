@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.0 — 2026-10-20
+
+`generateSeedVR2Upscale` agrandit une image avec SeedVR2 7B int8 : l'image locale est envoyée avec `uploadImage`, agrandie en lanczos, puis restaurée en un pas. `buildSeedVR2Prompt` reproduit le modèle de workflow de ComfyUI (`docs/workflow_utility_seedvr2_7b_int8_upscale_image.json`), sans le nœud `ImageCompare`. `SeedVR2Options` porte `image`, `resize` (`{ multiplier }` ou `{ longerSide }`), `colorCorrection`, `seed`, `tileSize`, `tileOverlap`, `unetName` et `vaeName`. `SEEDVR2_DEFAULTS` donne ×4, correction `lab` (le workflow d'exemple utilise `none`, aux couleurs un peu plus chaudes) et le modèle 7B. `ColorCorrection` liste les valeurs de `SeedVR2PostProcessing`.
+
 ## 0.17.0 — 2026-10-20
 
 `runGraph` est exporté par l'entrée du paquet : il envoie un graphe API tel quel (par exemple relu dans un png ou un mp3, puis modifié), attend la fin et enregistre les fichiers produits. Demandé par llm-multi-ts (`remix`) et persona_helper.
