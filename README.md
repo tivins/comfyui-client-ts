@@ -43,7 +43,7 @@ Ailleurs, par git (`vps` est l'alias de `~/.ssh/config`), figé sur une version 
 ```json
 {
   "dependencies": {
-    "comfyui-client": "git+ssh://vps/data/git/comfyui-client-ts#v0.18.2"
+    "comfyui-client": "git+ssh://vps:/data/git/comfyui-client-ts#v0.18.2"
   }
 }
 ```
