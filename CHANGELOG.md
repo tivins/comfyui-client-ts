@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0 — 2026-10-19
+
+`deleteFromServer` efface enfin les fichiers produits du dossier `output` du serveur. Jusqu'ici, il ne retirait que le prompt de l'historique et de la file. ComfyUI n'ayant pas de route pour ça, le dépôt ajoute le custom node `custom_nodes/comfyui-delete-output`, qui ajoute `POST /output/delete` (et `/api/output/delete`). La route reçoit `{ files: [{ filename, subfolder, type }] }`, n'accepte que `type: "output"`, vérifie tous les chemins avant d'effacer quoi que ce soit (mêmes garde-fous que `GET /view`), et renvoie `{ deleted, missing }`. Un fichier déjà absent n'est pas une erreur.
+
+`runGraph` appelle cette route avant `POST /history` et `POST /queue`, avec les seuls fichiers `type: "output"`. Si ComfyUI répond 404 ou 405 (custom node absent ou ComfyUI pas redémarré), les fichiers restent, `logger.warn` le signale et l'historique est retiré comme avant. Une autre erreur lève une exception, et l'historique reste.
+
+Un graphe identique au précédent est servi par le cache de ComfyUI, qui renvoie le fichier déjà produit. Si ce fichier a été effacé, `runGraph` le dit dans l'erreur du `GET /view` (404), en s'appuyant sur le message `execution_cached` de l'historique.
+
+`install_comfyui.sh` lie le custom node dans `ComfyUI/custom_nodes/`. Le README décrit l'installation à la main. Le custom node a ses tests Python (`test_output_files.py`).
+
 ## 0.15.0 — 2026-10-18
 
 `readMp3Metadata` lit les tags `prompt` (graphe API) et `workflow` (graphe UI) d'un mp3 ComfyUI : des frames ID3v2 `TXXX`, en ID3v2.3 ou 2.4, encodées en latin-1, UTF-16 ou UTF-8, désynchronisées ou non. Les frames compressées ou chiffrées sont ignorées. Un mp3 sans tag, ou un tag absent, donne `null`. `readMp3MetadataFile` fait la même lecture depuis un chemin, sans lire l'audio. Le `meta` passé à `generateMiniMaxMusic3` se relit ainsi dans le `_meta` de l'UNET (`37:6`).

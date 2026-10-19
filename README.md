@@ -19,6 +19,7 @@ Le graphe reprend le workflow UI `image_qwen_image_2_1_t2i_001_simple`. `POST /p
   - UNET `qwen_image_2.1_int8_convrot.safetensors`
   - CLIP `qwen3vl_8b_int8_convrot.safetensors`
   - VAE `qwen_image_2.1_vae_bf16.safetensors`
+- Pour `deleteFromServer` : le custom node `comfyui-delete-output` installé dans ComfyUI (voir [Effacer du serveur](#effacer-du-serveur))
 
 Le budget de pixels est fixé à 1 mégapixel. `cfg` et `denoise` du `KSampler` restent à `1`.
 
@@ -74,13 +75,25 @@ const paths = await generateQwenImage(options, settings);
 | --- | --- |
 | `server` | `http://127.0.0.1:8188` |
 | `outputDir` | `client-ts/output` |
-| `deleteFromServer` | absent : l'historique et la file restent |
+| `deleteFromServer` | absent : les fichiers, l'historique et la file restent |
 | `logger` | `silentLogger` : rien n'est affiché |
 | `meta` | absent |
 
 `Aspect`, `Sampler` et `Scheduler` sont des objets de littéraux. `Sampler.Euler` vaut `"euler"`. ComfyUI reçoit cette chaîne.
 
-`deleteFromServer` retire le prompt de l'historique (`POST /history`) puis de la file (`POST /queue`), avec `{ delete: [promptId] }`. Le fichier dans le dossier `output` du serveur n'est pas effacé.
+### Effacer du serveur
+
+`deleteFromServer` efface les fichiers produits du dossier `output` du serveur (`POST /api/output/delete`), puis retire le prompt de l'historique (`POST /history`) et de la file (`POST /queue`), avec `{ delete: [promptId] }`. Seuls les fichiers `type: "output"` sont effacés : ceux de `temp` restent, ComfyUI vide ce dossier au démarrage.
+
+ComfyUI n'a pas de route pour effacer un fichier. `POST /api/output/delete` vient du custom node `comfyui-delete-output`, rangé dans `custom_nodes/` à la racine de ce dépôt. `install_comfyui.sh` le lie dans `ComfyUI/custom_nodes/`. À la main :
+
+```sh
+ln -sfn /data/softwares/comfyui/custom_nodes/comfyui-delete-output /data/softwares/comfyui/ComfyUI/custom_nodes/comfyui-delete-output
+```
+
+Puis redémarrer ComfyUI. Sans le custom node, ComfyUI répond 404 ou 405 : les fichiers restent, `logger.warn` le signale, et l'historique est retiré comme avant. Une autre erreur (chemin hors du dossier `output`, fichier impossible à effacer) lève une exception, et l'historique reste.
+
+ComfyUI garde en cache le résultat du dernier graphe. Relancer un graphe identique (même graine, mêmes entrées) ne réexécute pas `SaveImage` : l'historique renvoie le fichier déjà produit. Si `deleteFromServer` l'a effacé, `GET /view` répond 404 et `runGraph` lève une erreur qui le dit. Changer la graine ou une autre entrée relance le graphe.
 
 ## Suivi et métadonnées
 
@@ -349,4 +362,10 @@ const { prompt } = await readMp3MetadataFile("output/music/focus/electronica-glo
 
 ```sh
 bun test
+```
+
+Le custom node a ses propres tests, qui ne chargent pas ComfyUI :
+
+```sh
+../venv/bin/python ../custom_nodes/comfyui-delete-output/test_output_files.py
 ```

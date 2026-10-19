@@ -29,7 +29,11 @@ type HistoryEntry = {
 export type GenerateSettings = {
     server?: string;
     outputDir?: string;
-    /** Après téléchargement, retire le fichier de l'historique et le prompt de la file. Le fichier dans `output/` reste. */
+    /**
+     * Après téléchargement, efface les fichiers du dossier `output` du serveur, puis retire le
+     * prompt de l'historique et de la file. L'effacement passe par le custom node
+     * `comfyui-delete-output` ; sans lui, les fichiers restent et `logger.warn` le signale.
+     */
     deleteFromServer?: boolean;
     /** Suivi de la génération. Par défaut, rien n'est affiché. `console` convient. */
     logger?: Logger;
@@ -101,6 +105,19 @@ function collectFiles(entry: HistoryEntry): HistoryFile[] {
     return files;
 }
 
+/** Vrai si un nœud de sortie n'a pas été réexécuté : ComfyUI a repris du cache le résultat d'un graphe identique. */
+function outputsFromCache(entry: HistoryEntry): boolean {
+    const cached = new Set<string>();
+    for (const message of entry.status?.messages ?? []) {
+        if (Array.isArray(message) && message[0] === "execution_cached") {
+            for (const node of (message[1] as { nodes?: unknown[] } | undefined)?.nodes ?? []) {
+                cached.add(String(node));
+            }
+        }
+    }
+    return Object.keys(entry.outputs ?? {}).some((node) => cached.has(node));
+}
+
 /** Vide l'historique des prompts terminés. La file en attente et le prompt en cours restent. */
 export async function clearHistory(server: string = DEFAULT_SERVER): Promise<void> {
     const base = serverBase({server});
@@ -125,12 +142,41 @@ async function postDelete(base: string, path: "history" | "queue", promptId: str
     }
 }
 
-async function deleteFromServer(base: string, promptId: string): Promise<void> {
+/**
+ * Efface les fichiers `type: "output"` par `POST /api/output/delete` (custom node
+ * `comfyui-delete-output`). Les fichiers `temp` sont laissés : ComfyUI vide ce dossier au
+ * démarrage. Sans la route, ComfyUI répond 404 ou 405 : les fichiers restent, avec un
+ * avertissement.
+ */
+async function deleteOutputFiles(base: string, files: HistoryFile[], logger: Logger): Promise<void> {
+    const outputs = files.filter((file) => file.type === "output");
+    if (outputs.length === 0) {
+        return;
+    }
+    const response = await fetch(`${base}/api/output/delete`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({files: outputs}),
+    });
+    if (response.status === 404 || response.status === 405) {
+        logger.warn(
+            `[comfyui] POST /api/output/delete absent (${response.status}) : fichiers laissés dans output/. ` +
+            `Custom node comfyui-delete-output installé, ComfyUI redémarré ?`,
+        );
+        return;
+    }
+    if (!response.ok) {
+        throw new Error(`POST /api/output/delete a répondu ${response.status} : ${await response.text()}`);
+    }
+}
+
+async function deleteFromServer(base: string, promptId: string, files: HistoryFile[], logger: Logger): Promise<void> {
+    await deleteOutputFiles(base, files, logger);
     await postDelete(base, "history", promptId);
     await postDelete(base, "queue", promptId);
 }
 
-async function downloadFile(base: string, file: HistoryFile, directory: string): Promise<string> {
+async function downloadFile(base: string, file: HistoryFile, directory: string, fromCache: boolean): Promise<string> {
     const query = new URLSearchParams({
         filename: file.filename,
         subfolder: file.subfolder,
@@ -138,7 +184,11 @@ async function downloadFile(base: string, file: HistoryFile, directory: string):
     });
     const response = await fetch(`${base}/view?${query}`);
     if (!response.ok) {
-        throw new Error(`GET /view ${file.filename} a répondu ${response.status}`);
+        const hint = response.status === 404 && fromCache
+            ? ". ComfyUI a repris du cache le résultat d'un graphe identique déjà lancé, dont le fichier a été" +
+              " effacé (deleteFromServer). Changer la graine ou une autre entrée relance le graphe."
+            : "";
+        throw new Error(`GET /view ${file.filename} a répondu ${response.status}${hint}`);
     }
     const target = join(directory, Date.now() + '-' + file.filename);
     await Bun.write(target, await response.bytes());
@@ -165,15 +215,16 @@ export async function runGraph(graph: ApiPrompt, settings: GenerateSettings = {}
     }
 
     await mkdir(outputDir, {recursive: true});
+    const fromCache = outputsFromCache(entry);
     const paths: string[] = [];
     for (const file of files) {
-        const path = await downloadFile(base, file, outputDir);
+        const path = await downloadFile(base, file, outputDir, fromCache);
         logger.log(`[comfyui] enregistré`, path);
         paths.push(path);
     }
 
     if (settings.deleteFromServer) {
-        await deleteFromServer(base, promptId);
+        await deleteFromServer(base, promptId, files, logger);
         logger.log(`[comfyui] retiré de ComfyUI`, promptId);
     }
 
