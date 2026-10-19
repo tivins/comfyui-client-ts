@@ -18,6 +18,7 @@ import {
   readMp3MetadataFile,
   readPngMetadata,
   readPngMetadataFile,
+  runGraph,
   silentLogger,
   type Logger,
 } from "./index.ts";
@@ -27,6 +28,7 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(Aspect.Standard).toBe("4:3 (Standard)");
   expect(Scheduler.Simple).toBe("simple");
   expect(DEFAULT_SERVER).toBe("http://127.0.0.1:8188");
+  expect(typeof runGraph).toBe("function");
   expect(QWEN_IMAGE_DEFAULTS.steps).toBe(25);
   expect(KREA2_DEFAULTS.unetName).toBe("museByStableYogi_v35Int8Extended.safetensors");
   expect(KREA2_DEFAULTS.cfg).toBe(1.5);

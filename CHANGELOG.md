@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0 — 2026-10-20
+
+`runGraph` est exporté par l'entrée du paquet : il envoie un graphe API tel quel (par exemple relu dans un png ou un mp3, puis modifié), attend la fin et enregistre les fichiers produits. Demandé par llm-multi-ts (`remix`) et persona_helper.
+
 ## 0.16.0 — 2026-10-19
 
 `deleteFromServer` efface enfin les fichiers produits du dossier `output` du serveur. Jusqu'ici, il ne retirait que le prompt de l'historique et de la file. ComfyUI n'ayant pas de route pour ça, le dépôt ajoute le custom node `custom_nodes/comfyui-delete-output`, qui ajoute `POST /output/delete` (et `/api/output/delete`). La route reçoit `{ files: [{ filename, subfolder, type }] }`, n'accepte que `type: "output"`, vérifie tous les chemins avant d'effacer quoi que ce soit (mêmes garde-fous que `GET /view`), et renvoie `{ deleted, missing }`. Un fichier déjà absent n'est pas une erreur.

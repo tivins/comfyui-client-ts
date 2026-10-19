@@ -1,4 +1,4 @@
-export {DEFAULT_SERVER, clearHistory} from "./client";
+export {DEFAULT_SERVER, clearHistory, runGraph} from "./client";
 export type {GenerateSettings} from "./client";
 
 export {silentLogger} from "./logger";
