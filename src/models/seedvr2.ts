@@ -53,7 +53,8 @@ export type SeedVR2Options = {
     tileOverlap: number;
 };
 
-function resizeInputs(resize: SeedVR2Resize): Record<string, ApiInput> {
+/** Entrées de `ResizeImageMaskNode` pour une taille `SeedVR2Resize`. Partagé avec la version vidéo. */
+export function resizeInputs(resize: SeedVR2Resize): Record<string, ApiInput> {
     if ("multiplier" in resize) {
         return {resize_type: "scale by multiplier", "resize_type.multiplier": resize.multiplier};
     }

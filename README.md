@@ -380,6 +380,46 @@ const paths = await generateSeedVR2Upscale({
 
 Fichiers côté serveur : `download_seedvr2.sh`, dans le dépôt comfyui, les télécharge dans `models/` (8,8 Go). Sur une RTX 5060 Ti 16 Go, un ×4 de 592×448 vers 2368×1792 prend environ 6 s, modèle déjà chargé. Le préfixe des fichiers enregistrés est `SeedVR2`.
 
+## Agrandir une vidéo (SeedVR2)
+
+`buildSeedVR2VideoPrompt` reprend le modèle de workflow « Upscale Video (SeedVR2 3B Int8) » (`workflows/workflow_utility_seedvr2_3b_int8_upscale_video.json`), sous-graphe déplié. C'est la chaîne de l'agrandissement d'image, appliquée à la vidéo : SeedVR2 restaure les images ensemble (par morceaux de `framesPerChunk`), et non une à une. `CreateVideo` remonte ensuite la vidéo avec les images/s, la profondeur et l'audio d'origine. Le `Video Slice` du modèle est retiré : on envoie la vidéo entière. Un test vérifie que le graphe produit est celui du modèle, interrupteurs résolus.
+
+`generateSeedVR2VideoUpscale` envoie d'abord la vidéo locale `video` avec `uploadImage`, puis le graphe :
+
+```ts
+import { generateSeedVR2VideoUpscale, SEEDVR2_VIDEO_DEFAULTS } from "comfyui-client";
+
+const paths = await generateSeedVR2VideoUpscale({
+  ...SEEDVR2_VIDEO_DEFAULTS,
+  video: "/data/media/videos/wan.mp4",
+});
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `video` | — | `LoadVideo` : chemin local pour `generateSeedVR2VideoUpscale`, nom côté serveur pour `buildSeedVR2VideoPrompt` |
+| `resize` | `{ multiplier: 2 }` | `ResizeImageMaskNode`, comme pour l'image |
+| `framesPerChunk` | `33` | `SeedVR2TemporalChunk` en mode manuel : images par morceau (4n + 1), recollés par `SeedVR2TemporalMerge` avec 2 latents (8 images) fondus ; `null` échantillonne d'un bloc |
+| `colorCorrection` | `ColorCorrection.Lab` | `SeedVR2PostProcessing.color_correction_method` |
+| `seed` | `42` | `KSampler` |
+| `tileSize`, `tileOverlap` | `512`, `128` | `VAEEncodeTiled` et `VAEDecodeTiled` (le VAE traite 64 images à la fois, 8 en commun) |
+| `unetName` | `seedvr2_7b_int8_convrot.safetensors` | `UNETLoader` ; le modèle de workflow prend le 3B, plus léger, que `download_seedvr2.sh` ne télécharge pas |
+| `vaeName` | `seedvr2_ema_vae_fp16.safetensors` | `VAELoader` |
+
+Découpage : la VRAM monte avec le nombre d'images échantillonnées d'un bloc. Le modèle de workflow découpe en mode auto, d'après la VRAM libre, mais sur 16 Go, une fois le 7B chargé, il ne reste que ~7 Gio et le mode auto tombe à une image par morceau, ce qui revient à agrandir image par image. La taille du morceau est donc fixée ici.
+
+Mesures sur une RTX 5060 Ti 16 Go, 7B, vidéo Wan 2.2 de 640 × 640 à 16 images/s en ×2 (1280 × 1280) :
+
+| Images | `framesPerChunk` | Durée | Pic de VRAM |
+| --- | --- | --- | --- |
+| 17 | `33` (un bloc) | 81 s (modèle à charger) | 11,8 Go |
+| 33 | `33` (un bloc) | 151 s | 13,6 Go |
+| 81 | `33` (3 morceaux) | 373 s | 13,9 Go |
+
+Le VAE prend presque tout le temps (pour 81 images : encodage 102 s, échantillonnage 21 s, décodage 249 s), soit ~4,5 s par image. `tileSize: 768` gagne ~17 % (33 images : 126 s) pour la même VRAM. D'un bloc, la VRAM monte d'environ 0,11 Go par image : 81 images ne tiendraient pas (~19 Go). Une vidéo interpolée en ×2 (161 images) prendrait ~12 min (non essayé). L'audio, les images/s et la durée sont gardés ; aucune couture visible aux jonctions des morceaux.
+
+Le préfixe des fichiers enregistrés est `SeedVR2Video`.
+
 ## Interpoler les images d'une vidéo (RIFE, FILM)
 
 `buildFrameInterpolationPrompt` reprend le modèle de workflow « Frame Interpolation: FILM or RIFE » (`utility_video_frame_interpolation`), sous-graphe déplié. `FrameInterpolate` ajoute `multiplier - 1` images entre chaque paire, et la vidéo est remontée à `fps × multiplier` avec l'audio d'origine : la durée ne change pas. Une vidéo Wan 2.2 de 81 images à 16 images/s donne, en ×2, 161 images à 32 images/s.

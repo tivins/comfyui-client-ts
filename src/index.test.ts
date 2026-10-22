@@ -8,6 +8,7 @@ import {
   MINIMAX_MUSIC3_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
   SEEDVR2_DEFAULTS,
+  SEEDVR2_VIDEO_DEFAULTS,
   Sampler,
   Scheduler,
   buildKrea2Prompt,
@@ -17,6 +18,7 @@ import {
   generateKrea2,
   generateMiniMaxMusic3,
   generateSeedVR2Upscale,
+  generateSeedVR2VideoUpscale,
   generateWan22,
   readMp3Metadata,
   readMp3MetadataFile,
@@ -44,6 +46,8 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof readMp3MetadataFile).toBe("function");
   expect(SEEDVR2_DEFAULTS.unetName).toBe("seedvr2_7b_int8_convrot.safetensors");
   expect(typeof generateSeedVR2Upscale).toBe("function");
+  expect(SEEDVR2_VIDEO_DEFAULTS.framesPerChunk).toBe(33);
+  expect(typeof generateSeedVR2VideoUpscale).toBe("function");
   expect(FRAME_INTERPOLATION_DEFAULTS.modelName).toBe("rife_v4.26.safetensors");
   expect(typeof generateFrameInterpolation).toBe("function");
   expect(typeof buildWan22Prompt).toBe("function");

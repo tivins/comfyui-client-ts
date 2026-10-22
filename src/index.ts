@@ -45,6 +45,9 @@ export type {MiniMaxMusic3Options} from "./models/minimax-music3";
 export {SEEDVR2_DEFAULTS, ColorCorrection, buildSeedVR2Prompt, generateSeedVR2Upscale} from "./models/seedvr2";
 export type {SeedVR2Options, SeedVR2Resize} from "./models/seedvr2";
 
+export {SEEDVR2_VIDEO_DEFAULTS, buildSeedVR2VideoPrompt, generateSeedVR2VideoUpscale} from "./models/seedvr2-video";
+export type {SeedVR2VideoOptions} from "./models/seedvr2-video";
+
 export {
     FRAME_INTERPOLATION_DEFAULTS,
     FrameInterpolationModel,
