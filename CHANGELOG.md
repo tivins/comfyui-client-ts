@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0 — 2026-10-22
+
+`generateWan22` prend un chemin local dans `inputImage` et l'envoie avec `uploadImage` avant le graphe, comme `generateKrea2Edit` ; `buildWan22Prompt` prend toujours le nom côté serveur. Les réglages jusqu'ici fixes deviennent des champs de `Wan22Options` : `negativePrompt`, `duration`, `steps`, `splitStep`, `cfg` et `lightning`, qui allume la LoRA lightx2v 4 pas déjà présente dans le graphe (4 pas coupés au pas 2, cfg 1). `WAN22_DEFAULTS` garde les valeurs du workflow d'origine (20 pas coupés au pas 10, cfg 3.5, 5 s à 16 images/s, 640 × 640). Demandé par llm-multi-ts (`videos.ts`). Changement cassant pour `generateWan22`, qui n'avait pas d'autre utilisateur.
+
 ## 0.18.2 — 2026-10-20
 
 Le paquet sort du dépôt comfyui et a son propre dépôt git (`vps:/data/git/comfyui-client-ts`), cloné dans `/data/projects/comfyui-client-ts` : les projets qui le prennent par chemin passent à `file:/data/projects/comfyui-client-ts`. Un autre projet peut aussi le prendre par git, figé sur un tag `v<version>`. Les graphes exportés que lisent les tests passent de `../docs/` à `workflows/` (Krea 2 Identity Edit, MiniMax Music 3, SeedVR2). Le README dit ce qui reste dans le dépôt comfyui : scripts de téléchargement des modèles, custom node `comfyui-delete-output`, skill MiniMax. Aucun changement de code.

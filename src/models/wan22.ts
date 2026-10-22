@@ -1,25 +1,56 @@
 import {runGraph, type GenerateSettings} from "../client";
+import {uploadImage} from "../upload";
 import {applyMeta, type ApiInput, type ApiPrompt} from "../workflow";
 
+/** Les réglages du workflow d'origine : 20 pas (10 high noise, 10 low noise), cfg 3.5, 5 s à 16 images/s. */
+export const WAN22_DEFAULTS = {
+    width: 640,
+    height: 640,
+    seed: 42,
+    fps: 16,
+    duration: 5,
+    steps: 20,
+    splitStep: 10,
+    cfg: 3.5,
+    lightning: false,
+    negativePrompt: "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+} as const satisfies Omit<Wan22Options, "inputImage" | "prompt">;
+
 export type Wan22Options = {
-    /** Nom de l'image dans le dossier `input` du serveur, tel que le renvoie `uploadImage`. */
+    /**
+     * Pour `buildWan22Prompt`, nom de l'image dans le dossier `input` du serveur, tel que le renvoie
+     * `uploadImage`. Pour `generateWan22`, chemin local : l'image est envoyée avant le graphe.
+     * `WanImageToVideo` la met à `width` × `height` (bilinéaire, recadrée au centre).
+     */
     inputImage: string;
     prompt: string;
+    negativePrompt: string;
     width: number;
     height: number;
     seed: number;
-    /** Images par seconde. La vidéo dure 5 s : `floor(5 × fps + 1)` images. */
+    /** Images par seconde. */
     fps: number;
+    /** Durée en secondes : `floor(duration × fps + 1)` images. */
+    duration: number;
+    /** Pas sans `lightning`, dont `splitStep` avec l'UNET high noise et le reste avec le low noise. */
+    steps: number;
+    splitStep: number;
+    cfg: number;
+    /**
+     * LoRA lightx2v 4 pas sur les deux UNET : 4 pas (2 + 2), cfg 1. `steps`, `splitStep` et `cfg`
+     * sont alors ignorés.
+     */
+    lightning: boolean;
 };
 
 /**
  * Graphe API du workflow UI Wan 2.2 image → vidéo (14B fp8).
  *
  * Deux `KSamplerAdvanced` se partagent les pas : l'UNET high noise
- * (`129:95`) jusqu'au pas 10, puis l'UNET low noise (`129:96`) jusqu'au
- * pas 20, cfg 3.5, euler / simple. L'interrupteur `129:131` (LoRA lightx2v
- * 4 pas) est à `false` : les LoRA et les valeurs 4 pas / cfg 1 restent dans
- * le graphe sans être utilisées. Le négatif est celui du workflow d'origine.
+ * (`129:95`) jusqu'à `splitStep`, puis l'UNET low noise (`129:96`) jusqu'à
+ * `steps`, euler / simple. L'interrupteur `129:131` choisit entre ces
+ * valeurs et la LoRA lightx2v 4 pas (4 pas, coupure au pas 2, cfg 1), qui
+ * reste dans le graphe quand elle est éteinte.
  *
  * `meta` s'ajoute au `_meta` de l'image d'entrée (97).
  */
@@ -115,7 +146,7 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
         },
         "129:89": {
             inputs: {
-                "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+                "text": options.negativePrompt,
                 "clip": [
                     "129:84",
                     0
@@ -128,7 +159,7 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
         },
         "129:128": {
             inputs: {
-                "value": 20
+                "value": options.steps
             },
             class_type: "PrimitiveInt",
             _meta: {
@@ -166,7 +197,7 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
         },
         "129:131": {
             inputs: {
-                "value": false
+                "value": options.lightning
             },
             class_type: "PrimitiveBoolean",
             _meta: {
@@ -215,7 +246,7 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
         },
         "129:127": {
             inputs: {
-                "value": 10
+                "value": options.splitStep
             },
             class_type: "PrimitiveInt",
             _meta: {
@@ -224,7 +255,7 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
         },
         "129:126": {
             inputs: {
-                "value": 3.5
+                "value": options.cfg
             },
             class_type: "PrimitiveFloat",
             _meta: {
@@ -488,7 +519,7 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
         },
         "129:161": {
             inputs: {
-                "value": 5
+                "value": options.duration
             },
             class_type: "PrimitiveFloat",
             _meta: {
@@ -529,9 +560,11 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
 }
 
 /**
- * Envoie le graphe Wan 2.2, attend la fin, et enregistre la vidéo.
- * `options.inputImage` doit déjà être côté serveur (voir `uploadImage`).
+ * Envoie l'image de départ au serveur, puis le graphe Wan 2.2, attend la fin, et enregistre la vidéo.
+ * Ici, `options.inputImage` est un chemin local ; il est remplacé par le nom que renvoie `uploadImage`.
  */
 export async function generateWan22(options: Wan22Options, settings: GenerateSettings = {}): Promise<string[]> {
-    return runGraph(buildWan22Prompt(options, settings.meta ?? null), settings);
+    const inputImage = await uploadImage(options.inputImage, settings);
+    settings.logger?.log(`[comfyui] image de départ envoyée`, inputImage);
+    return runGraph(buildWan22Prompt({...options, inputImage}, settings.meta ?? null), settings);
 }

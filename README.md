@@ -250,24 +250,27 @@ La consigne est une instruction d'édition. Ce qu'elle ne mentionne pas (tenue, 
 
 ## Wan 2.2 image → vidéo
 
-`buildWan22Prompt` reprend le workflow UI Wan 2.2 i2v 14B fp8 : UNET high noise jusqu'au pas 10, puis low noise jusqu'au pas 20, cfg 3.5, euler / simple, sans la LoRA lightx2v 4 pas. La vidéo dure 5 s. Ces réglages sont fixes ; seuls ceux de `Wan22Options` changent :
+`buildWan22Prompt` reprend le workflow UI Wan 2.2 i2v 14B fp8 : UNET high noise jusqu'à `splitStep`, puis low noise jusqu'à `steps`, euler / simple. `WAN22_DEFAULTS` garde les valeurs du workflow : 20 pas coupés au pas 10, cfg 3.5, 5 s à 16 images/s, négatif d'origine. `lightning: true` allume la LoRA lightx2v 4 pas sur les deux UNET (4 pas coupés au pas 2, cfg 1) : `steps`, `splitStep` et `cfg` sont alors ignorés.
 
-| Champ | Nœud |
-| --- | --- |
-| `inputImage` | `LoadImage` : nom côté serveur, tel que le renvoie `uploadImage` |
-| `prompt` | `CLIPTextEncode` positif |
-| `width` × `height` | `WanImageToVideo` |
-| `seed` | premier `KSamplerAdvanced` |
-| `fps` | `CreateVideo` ; `floor(5 × fps + 1)` images |
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `inputImage` | | `LoadImage` ; pour `generateWan22`, un chemin local envoyé avec `uploadImage` |
+| `prompt`, `negativePrompt` | négatif du workflow | `CLIPTextEncode` positif et négatif |
+| `width` × `height` | 640 × 640 | `WanImageToVideo`, qui y met l'image de départ (bilinéaire, recadrée au centre) |
+| `seed` | 42 | premier `KSamplerAdvanced` |
+| `fps`, `duration` | 16, 5 | `CreateVideo` ; `floor(duration × fps + 1)` images |
+| `steps`, `splitStep`, `cfg` | 20, 10, 3.5 | `KSamplerAdvanced` (sans `lightning`) |
+| `lightning` | `false` | interrupteur `Enable 4steps LoRA?` |
+
+Le redimensionnement de `WanImageToVideo` n'a pas d'anti-aliasing : une grande image réduite d'un coup donne du crénelage. Mieux vaut envoyer une image déjà à la taille de la vidéo, au même ratio.
 
 ```ts
-import { generateWan22, uploadImage } from "comfyui-client";
+import { generateWan22, WAN22_DEFAULTS } from "comfyui-client";
 
-const inputImage = await uploadImage("/data/refs/start.png", settings);
-const paths = await generateWan22({ inputImage, prompt: "the cat turns its head", width: 640, height: 640, seed: 0, fps: 16 }, settings);
+const paths = await generateWan22({ ...WAN22_DEFAULTS, inputImage: "/data/refs/start.png", prompt: "the cat turns its head", lightning: true }, settings);
 ```
 
-Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors` et `wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors`, CLIP `umt5_xxl_fp8_e4m3fn_scaled.safetensors`, VAE `wan_2.1_vae.safetensors`.
+Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors` et `wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors`, CLIP `umt5_xxl_fp8_e4m3fn_scaled.safetensors`, VAE `wan_2.1_vae.safetensors`, LoRA `wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors` et `…_low_noise.safetensors` (pour `lightning`).
 
 ## MiniMax Music 3
 
