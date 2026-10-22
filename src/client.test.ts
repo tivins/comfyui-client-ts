@@ -122,6 +122,19 @@ describe("runGraph", () => {
     expect(outputDeleteBodies).toEqual([{ files: [song] }]);
   });
 
+  test("ne rapatrie pas l'aperçu d'un fichier d'entrée (LoadVideo)", async () => {
+    const source: FakeFile = { filename: "wan.mp4", subfolder: "", type: "input" };
+    const video: FakeFile = { filename: "FrameInterpolation_00001_.mp4", subfolder: "", type: "output" };
+    const calls: string[] = [];
+    globalThis.fetch = fakeServer({ calls, files: [source, video] });
+
+    const paths = await runGraph(graph, { server: "http://127.0.0.1:9", outputDir: await tempOutputDir() });
+
+    expect(paths).toHaveLength(1);
+    expect(paths[0]!.endsWith("FrameInterpolation_00001_.mp4")).toBe(true);
+    expect(calls.filter((call) => call.includes("/view?"))).toHaveLength(1);
+  });
+
   test("sans fichier de type output, n'appelle pas la route d'effacement", async () => {
     const calls: string[] = [];
     const preview: FakeFile = { filename: "preview.png", subfolder: "", type: "temp" };

@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 import {
   Aspect,
   DEFAULT_SERVER,
+  FRAME_INTERPOLATION_DEFAULTS,
   KREA2_DEFAULTS,
   MINIMAX_MUSIC3_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
@@ -12,6 +13,7 @@ import {
   buildKrea2Prompt,
   buildMiniMaxMusic3Prompt,
   buildWan22Prompt,
+  generateFrameInterpolation,
   generateKrea2,
   generateMiniMaxMusic3,
   generateSeedVR2Upscale,
@@ -42,6 +44,8 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof readMp3MetadataFile).toBe("function");
   expect(SEEDVR2_DEFAULTS.unetName).toBe("seedvr2_7b_int8_convrot.safetensors");
   expect(typeof generateSeedVR2Upscale).toBe("function");
+  expect(FRAME_INTERPOLATION_DEFAULTS.modelName).toBe("rife_v4.26.safetensors");
+  expect(typeof generateFrameInterpolation).toBe("function");
   expect(typeof buildWan22Prompt).toBe("function");
   expect(typeof generateWan22).toBe("function");
   expect(MINIMAX_MUSIC3_DEFAULTS.steps).toBe(30);

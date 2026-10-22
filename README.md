@@ -380,6 +380,33 @@ const paths = await generateSeedVR2Upscale({
 
 Fichiers côté serveur : `download_seedvr2.sh`, dans le dépôt comfyui, les télécharge dans `models/` (8,8 Go). Sur une RTX 5060 Ti 16 Go, un ×4 de 592×448 vers 2368×1792 prend environ 6 s, modèle déjà chargé. Le préfixe des fichiers enregistrés est `SeedVR2`.
 
+## Interpoler les images d'une vidéo (RIFE, FILM)
+
+`buildFrameInterpolationPrompt` reprend le modèle de workflow « Frame Interpolation: FILM or RIFE » (`utility_video_frame_interpolation`), sous-graphe déplié. `FrameInterpolate` ajoute `multiplier - 1` images entre chaque paire, et la vidéo est remontée à `fps × multiplier` avec l'audio d'origine : la durée ne change pas. Une vidéo Wan 2.2 de 81 images à 16 images/s donne, en ×2, 161 images à 32 images/s.
+
+`generateFrameInterpolation` envoie d'abord la vidéo locale `video` avec `uploadImage`, puis le graphe :
+
+```ts
+import { generateFrameInterpolation, FRAME_INTERPOLATION_DEFAULTS } from "comfyui-client";
+
+const paths = await generateFrameInterpolation({
+  ...FRAME_INTERPOLATION_DEFAULTS,
+  video: "/data/media/videos/wan.mp4",
+});
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `video` | — | `LoadVideo` : chemin local pour `generateFrameInterpolation`, nom côté serveur pour `buildFrameInterpolationPrompt` |
+| `modelName` | `rife_v4.26.safetensors` | `FrameInterpolationModelLoader`, qui reconnaît RIFE ou FILM d'après les poids ; `FrameInterpolationModel` liste les fichiers du dépôt Comfy-Org (`Film` : `film_net_fp16.safetensors`) |
+| `multiplier` | `2` | `FrameInterpolate`, entier de 2 à 16 ; multiplie aussi les images/s de `CreateVideo` |
+
+Le multiplicateur est entier : 16 images/s donnent 32 ou 48, pas 25.
+
+Sur une RTX 5060 Ti 16 Go, une vidéo Wan 2.2 de 528×784 en ×2 (80 images à créer) : RIFE 4.26 interpole en 1,6 s (4 s pour tout le graphe, +0,4 Go de VRAM), FILM en 9,8 s (12 s, +1,8 Go). Sur cette vidéo (un chaton qui mordille un jouet à plumes), aucun des deux ne laisse d'artefact visible sur les griffes ou les plumes ; FILM est un peu plus net sur les textures fines.
+
+Fichiers côté serveur : `download_frame_interpolation.sh`, dans le dépôt comfyui, télécharge RIFE 4.26 et FILM dans `models/frame_interpolation/` (92 Mo ; `all` ajoute les autres RIFE, 246 Mo en tout), puis déclare le dossier dans `extra_model_paths.yaml` : redémarrer ComfyUI ensuite. Le préfixe des fichiers enregistrés est `FrameInterpolation`.
+
 ## Lire le graphe dans un PNG
 
 ComfyUI écrit le graphe dans le PNG : `prompt` est le graphe API, `workflow` est le graphe de l'interface. `workflow` manque quand l'image a été produite par l'API sans `extra_pnginfo`.

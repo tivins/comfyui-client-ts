@@ -96,13 +96,16 @@ async function waitForHistory(base: string, promptId: string, logger: Logger): P
  * `SaveVideo` (Wan 2.2) range sa vidéo sous `images`, avec `animated`
  * (`PreviewVideo` dans `comfy_api/latest/_ui.py`). `SaveAudio…` (MiniMax
  * Music 3) range ses fichiers sous `audio`.
+ *
+ * Les fichiers `type: "input"` sont écartés : `LoadVideo` renvoie la vidéo
+ * chargée en aperçu, qui n'est pas un résultat.
  */
 function collectFiles(entry: HistoryEntry): HistoryFile[] {
     const files: HistoryFile[] = [];
     for (const output of Object.values(entry.outputs ?? {})) {
         files.push(...(output.images ?? []), ...(output.audio ?? []));
     }
-    return files;
+    return files.filter((file) => file.type !== "input");
 }
 
 /** Vrai si un nœud de sortie n'a pas été réexécuté : ComfyUI a repris du cache le résultat d'un graphe identique. */

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.0 — 2026-10-22
+
+`generateFrameInterpolation` augmente les images/s d'une vidéo avec RIFE ou FILM : la vidéo locale est envoyée avec `uploadImage`, `FrameInterpolate` ajoute `multiplier - 1` images entre chaque paire, et la vidéo est remontée à `fps × multiplier` avec son audio. Une vidéo Wan 2.2 de 81 images à 16 images/s devient, en ×2, 161 images à 32 images/s, même durée. `buildFrameInterpolationPrompt` reprend le modèle de workflow « Frame Interpolation: FILM or RIFE » de ComfyUI, sans l'interrupteur de ralenti. `FrameInterpolationOptions` porte `video`, `modelName` et `multiplier` ; `FRAME_INTERPOLATION_DEFAULTS` donne RIFE 4.26 en ×2 ; `FrameInterpolationModel` liste les fichiers du dépôt Comfy-Org. Demandé par llm-multi-ts.
+
+`runGraph` ne rapatrie plus les fichiers `type: "input"` de l'historique : `LoadVideo` y renvoie la vidéo chargée en aperçu, qui se retrouvait dans `outputDir` et dans les chemins renvoyés.
+
 ## 0.19.0 — 2026-10-22
 
 `generateWan22` prend un chemin local dans `inputImage` et l'envoie avec `uploadImage` avant le graphe, comme `generateKrea2Edit` ; `buildWan22Prompt` prend toujours le nom côté serveur. Les réglages jusqu'ici fixes deviennent des champs de `Wan22Options` : `negativePrompt`, `duration`, `steps`, `splitStep`, `cfg` et `lightning`, qui allume la LoRA lightx2v 4 pas déjà présente dans le graphe (4 pas coupés au pas 2, cfg 1). `WAN22_DEFAULTS` garde les valeurs du workflow d'origine (20 pas coupés au pas 10, cfg 3.5, 5 s à 16 images/s, 640 × 640). Demandé par llm-multi-ts (`videos.ts`). Changement cassant pour `generateWan22`, qui n'avait pas d'autre utilisateur.
