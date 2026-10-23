@@ -5,6 +5,7 @@ import {
   DEFAULT_SERVER,
   FRAME_INTERPOLATION_DEFAULTS,
   KREA2_DEFAULTS,
+  MINIMAX_H3_DEFAULTS,
   MINIMAX_MUSIC3_DEFAULTS,
   QWEN_IMAGE_DEFAULTS,
   SEEDVR2_DEFAULTS,
@@ -12,10 +13,12 @@ import {
   Sampler,
   Scheduler,
   buildKrea2Prompt,
+  buildMiniMaxH3Prompt,
   buildMiniMaxMusic3Prompt,
   buildWan22Prompt,
   generateFrameInterpolation,
   generateKrea2,
+  generateMiniMaxH3,
   generateMiniMaxMusic3,
   generateSeedVR2Upscale,
   generateSeedVR2VideoUpscale,
@@ -52,6 +55,9 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(typeof generateFrameInterpolation).toBe("function");
   expect(typeof buildWan22Prompt).toBe("function");
   expect(typeof generateWan22).toBe("function");
+  expect(MINIMAX_H3_DEFAULTS.steps).toBe(20);
+  expect(typeof buildMiniMaxH3Prompt).toBe("function");
+  expect(typeof generateMiniMaxH3).toBe("function");
   expect(MINIMAX_MUSIC3_DEFAULTS.steps).toBe(30);
   expect(typeof buildMiniMaxMusic3Prompt).toBe("function");
   expect(typeof generateMiniMaxMusic3).toBe("function");

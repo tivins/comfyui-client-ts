@@ -39,6 +39,15 @@ export type {Krea2Options, Krea2EditOptions} from "./models/krea2";
 export {WAN22_DEFAULTS, buildWan22Prompt, generateWan22} from "./models/wan22";
 export type {Wan22Options} from "./models/wan22";
 
+export {
+    MINIMAX_H3_DEFAULTS,
+    MiniMaxH3Model,
+    buildMiniMaxH3Prompt,
+    generateMiniMaxH3,
+    minimaxH3FrameCount,
+} from "./models/minimax-h3";
+export type {MiniMaxH3Options} from "./models/minimax-h3";
+
 export {MINIMAX_MUSIC3_DEFAULTS, buildMiniMaxMusic3Prompt, generateMiniMaxMusic3} from "./models/minimax-music3";
 export type {MiniMaxMusic3Options} from "./models/minimax-music3";
 

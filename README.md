@@ -1,6 +1,6 @@
 # comfyui-client
 
-Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
 
 | Fichier | Contenu |
 | --- | --- |
@@ -118,7 +118,7 @@ ComfyUI garde en cache le résultat du dernier graphe. Relancer un graphe identi
 await generateQwenImage(options, { ...settings, logger: console });
 ```
 
-`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen, Krea 2 et MiniMax Music 3, l'image d'entrée pour Wan 2.2). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` (images) et `readMp3Metadata` (morceaux) le relisent : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
+`meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen, Krea 2 et MiniMax Music 3, l'image d'entrée pour Wan 2.2 et MiniMax H3). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` (images) et `readMp3Metadata` (morceaux) le relisent : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
 
 ## Vider l'historique
 
@@ -271,6 +271,48 @@ const paths = await generateWan22({ ...WAN22_DEFAULTS, inputImage: "/data/refs/s
 ```
 
 Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors` et `wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors`, CLIP `umt5_xxl_fp8_e4m3fn_scaled.safetensors`, VAE `wan_2.1_vae.safetensors`, LoRA `wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors` et `…_low_noise.safetensors` (pour `lightning`).
+
+## MiniMax H3 image → vidéo
+
+`buildMiniMaxH3Prompt` reprend le modèle de workflow « MiniMax H3 Image to Video » (`video_minimax_h3_i2v`), sous-graphe déplié. MiniMax H3 (33 milliards de paramètres) produit la vidéo et son son stéréo 32 kHz (voix, bruitages, musique) en une passe : `MiniMaxH3ImageToVideo` encode le prompt avec Qwen3-VL 32B et l'image de départ, `SamplerCustomAdvanced` échantillonne en `res_multistep` / `simple` sans CFG, puis le latent est décodé par le VAE vidéo et par le VAE audio, et `CreateVideo` les réunit à 24 images/s. Le prompt désigne l'image de départ par `<Picture 1>` ; une ligne `Audio:` décrit le son.
+
+`generateMiniMaxH3` envoie d'abord l'image de départ (et la dernière, s'il y en a une) avec `uploadImage` :
+
+```ts
+import { generateMiniMaxH3, MINIMAX_H3_DEFAULTS } from "comfyui-client";
+
+const paths = await generateMiniMaxH3({
+  ...MINIMAX_H3_DEFAULTS,
+  inputImage: "/data/refs/kitten.png",
+  prompt: "The tabby kitten from <Picture 1> bats the yarn ball with its paw. Static camera.\nAudio: quiet room tone, soft paw taps, a tiny meow.",
+}, settings);
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `inputImage` | | `LoadImage` (114) ; pour `generateMiniMaxH3`, un chemin local envoyé avec `uploadImage` |
+| `lastImage` | `null` | `LoadImage` (117) relié à `last_frame`, même convention ; recadrée au centre |
+| `prompt` | | `MiniMaxH3ImageToVideo` |
+| `width` × `height` | 768 × 768 | `MiniMaxH3ImageToVideo`, multiples de 32 ; l'image de départ y est étirée sans garder son ratio |
+| `seed` | 42 | `RandomNoise` |
+| `duration` | 5 | `round(duration × 24)` images, arrondi au-dessus à 17k + 5 : 5 s → 124 images (`minimaxH3FrameCount`) |
+| `steps` | 20 | `BasicScheduler` (sans `turbo`) |
+| `turbo` | `false` | LoRA Turbo 8 pas v1.1 768p, 8 pas : `steps` est ignoré |
+| `unetName` | `MiniMaxH3Model.Nvfp4` | `UNETLoader` ; `MiniMaxH3Model.Int8` est celui du modèle de workflow |
+
+Mesures sur une RTX 5060 Ti 16 Go, diffusion NVFP4, même image et même graine, 5 s (124 images) :
+
+| Taille | Réglage | Durée | Rendu |
+| --- | --- | --- | --- |
+| 640 × 640 | 20 pas | 254 s (12,2 s/pas) | bon |
+| 768 × 768 | 20 pas | 478 s (23,2 s/pas) | le meilleur |
+| 640 × 640 | Turbo v1.0, 8 pas | 144 s | détails brouillés |
+| 768 × 768 | Turbo v1.0, 8 pas | 216 s | détails brouillés |
+| 768 × 768 | Turbo v1.1 768p, 8 pas | 213 s | détails brouillés |
+
+Avec le Turbo, les détails fins (fils d'une pelote de laine, yeux, pelage) se brouillent au fil de la vidéo ; c'est pourquoi il est éteint par défaut. Il n'a pas été essayé avec la diffusion int8. VRAM au plus 15,8 Go, RAM 10,9 Go, sans swap ; ComfyUI charge les modèles en VRAM dynamique et déborde en RAM si besoin. La première génération compte ~30 s de chargement. Sous 384p, le modèle échoue.
+
+Fichiers côté serveur, téléchargés par `download_minimax_h3.sh` du dépôt comfyui : diffusion `minimax_h3_fl2va_pruned_nvfp4.safetensors` (NVFP4, demande une carte Blackwell ; `download_minimax_h3.sh int8` ajoute `minimax_h3_fl2va_pruned_int8_convrot.safetensors`), CLIP `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`, VAE `minimax_h3_video_vae_int8_convrot.safetensors` et `minimax_h3_audio_vae_fp32.safetensors`, LoRA `minimax_h3_fl2v_turbo_8step_v1.1_768p_comfyui_bf16.safetensors` (pour `turbo`). ComfyUI 0.30.0 ou plus. Licence MiniMax H3 Community License : usage commercial permis, avec « MiniMax H3 » affiché dans l'interface du produit.
 
 ## MiniMax Music 3
 

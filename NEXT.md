@@ -1,7 +1,10 @@
-# Reprise — comfyui-client-ts (2026-10-22)
+# Reprise — comfyui-client-ts (2026-10-23)
 
 ## Où j'en suis
-- 0.19.0 codée, **pas commitée** (demandée par llm-multi-ts, `videos.ts`) : `generateWan22` envoie l'image locale, `WAN22_DEFAULTS`, `steps`/`splitStep`/`cfg`/`duration`/`negativePrompt`/`lightning` (LoRA lightx2v 4 pas). 97 tests OK, `tsc` propre. Pas encore essayée sur le serveur.
+- 0.22.0 poussée avec le tag `v0.22.0` : `generateMiniMaxH3` (MiniMax H3 I2V avec son ; défauts 768², 5 s, 20 pas sans Turbo, NVFP4). 768² 5 s : 478 s. Le Turbo brouille les détails (essais dans `output/minimax-h3/`, `compare_A_C_D.mp4`). Modèles par `download_minimax_h3.sh` (dépôt comfyui, poussé) ; l'int8 (`download_minimax_h3.sh int8`) pas téléchargé, à prendre pour comparer si besoin.
+- 0.21.0 poussée avec le tag `v0.21.0` : `generateSeedVR2VideoUpscale` (SeedVR2 7B, morceaux de 33 images). 81 images 640² en ×2 : 373 s, 13,9 Go. Vidéos d'essai dans `output/seedvr2-video/` (dont un côte à côte lanczos | vidéo | image par image). 161 images (vidéo interpolée) pas essayé : ~12 min estimées.
+- 0.20.0 poussée avec le tag `v0.20.0` (`91c6be3`) : `generateFrameInterpolation` (RIFE/FILM). Script `download_frame_interpolation.sh` commité dans le dépôt comfyui (`936a1e3`, poussé). RIFE reste le défaut, FILM au choix par `modelName`. Essais sur deux vidéos dans `output/interpolation/` : aucun artefact gênant, FILM un peu plus cohérent sur les brins fins.
+- 0.19.0 commitée et poussée (`bcb377c`) (sans tag, voulu ; demandée par llm-multi-ts, `videos.ts`) : `generateWan22` envoie l'image locale, `WAN22_DEFAULTS`, `steps`/`splitStep`/`cfg`/`duration`/`negativePrompt`/`lightning` (LoRA lightx2v 4 pas). 97 tests OK, `tsc` propre. Pas encore essayée sur le serveur.
 - 0.18.2 : la lib a son dépôt (`vps:/data/git/comfyui-client-ts`, tags `v0.11.0` … `v0.18.2`), clonée ici. Venait de `/data/softwares/comfyui/client-ts`. llm-multi-ts, persona_helper, flow_editor et `client-ts-example` pointent maintenant vers `file:/data/projects/comfyui-client-ts`.
 - 0.18.0 : `generateSeedVR2Upscale` (SeedVR2 7B int8 ; modèles via `download_seedvr2.sh` du dépôt comfyui). 0.18.1 : `bun run typecheck`.
 - Les morceaux et images générés sont dans `output/` (ignoré par git, déplacé ici avec la lib). Ils s'écoutent avec la page de `/data/media/localGeneration`.
