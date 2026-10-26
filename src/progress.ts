@@ -10,8 +10,13 @@ export type GenerationProgress = {
     node: string;
     /** `class_type` du nœud en cours, `undefined` s'il n'est pas dans le graphe envoyé. */
     classType: string | undefined;
-    /** Nœuds terminés, sur les nœuds à exécuter (ceux que ComfyUI reprend du cache ne comptent pas). */
+    /** Nœuds terminés. */
     nodesDone: number;
+    /**
+     * Maximum des nœuds à exécuter : nœuds du graphe, moins ceux que ComfyUI reprend du cache.
+     * La branche non prise d'un `ComfySwitchNode` ne s'exécute pas, et le compte n'y arrive
+     * alors jamais (Wan 2.2 : 26 nœuds sur 32). Les pas des samplers mesurent mieux l'avancement.
+     */
     nodesTotal: number;
     /** Pas du nœud en cours, quand il en signale (samplers, quelques autres) ; `null` sinon. */
     step: { value: number; max: number } | null;

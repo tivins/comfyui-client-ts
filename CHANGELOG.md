@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.1 — 2026-10-26
+
+`GenerationProgress.nodesTotal` est documenté comme un maximum : la branche non prise d'un `ComfySwitchNode` ne s'exécute pas, et `nodesDone` n'atteint alors pas le total (Wan 2.2 : 26 nœuds sur 32). Le README le dit, avec ce qu'ont montré les essais sur le serveur : les pas des samplers mesurent mieux l'avancement, et le chargement d'un modèle se fait souvent au début du sampler, avant son premier pas. Essais avec `onProgress` sur une RTX 5060 Ti : Qwen 8 pas (16 s), Wan 2.2 par défaut (1323 s, deux séries de 10 pas, environ 64 s par pas), MiniMax H3 par défaut (477 s, 20 pas d'environ 22 s, 14 nœuds sur 14). Aucun changement de code.
+
 ## 0.23.0 — 2026-10-26
 
 `GenerateSettings.onProgress` reçoit l'avancement d'une génération : `runGraph` ouvre le WebSocket `/ws?clientId=…` de ComfyUI avant `POST /prompt`, qui reçoit maintenant `client_id`, et appelle le callback au début de chaque nœud et à chaque pas. `GenerationProgress` (`src/progress.ts`, exporté) porte `promptId`, `node`, `classType`, `nodesDone`, `nodesTotal` (hors nœuds repris du cache) et `step` (`{ value, max }` ou `null`). Seuls les messages du prompt lancé sont pris, y compris ceux reçus avant la réponse de `POST /prompt`. Les aperçus binaires sont ignorés. La fin annoncée par le WebSocket réveille tout de suite l'attente sur `/history`, qui reste la source du résultat. Un WebSocket injoignable, ou un callback qui lève une erreur, donne un `logger.warn` sans arrêter la génération. Le message « en cours » du logger ajoute le dernier avancement. Sans `onProgress`, rien ne change.
