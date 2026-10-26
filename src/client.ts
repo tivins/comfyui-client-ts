@@ -3,6 +3,7 @@ import {dirname, join} from "node:path";
 import {fileURLToPath} from "node:url";
 
 import {silentLogger, type Logger} from "./logger";
+import {ProgressSocket, type GenerationProgress} from "./progress";
 import type {ApiInput, ApiPrompt} from "./workflow";
 
 export const DEFAULT_SERVER = "http://127.0.0.1:8188";
@@ -10,6 +11,8 @@ export const DEFAULT_SERVER = "http://127.0.0.1:8188";
 const POLL_MS = 2000;
 const PROGRESS_LOG_MS = 15_000;
 const TIMEOUT_MS = 30 * 60 * 1000;
+/** Une fois l'historique complet, délai laissé aux derniers messages du WebSocket. */
+const END_GRACE_MS = 500;
 
 type HistoryFile = {
     filename: string;
@@ -39,17 +42,24 @@ export type GenerateSettings = {
     logger?: Logger;
     /** Posé dans le `_meta` d'un nœud du graphe ; ComfyUI le recopie dans le chunk `prompt` des fichiers produits. */
     meta?: Record<string, ApiInput>;
+    /**
+     * Reçoit l'avancement : nœud en cours et pas du sampler. Ouvre le WebSocket `/ws` de
+     * ComfyUI pendant la génération ; s'il est injoignable, `logger.warn` le signale et la
+     * génération se fait sans suivi. Les nœuds sans pas (chargement de modèles, VAE decode)
+     * n'envoient que leur début.
+     */
+    onProgress?: (progress: GenerationProgress) => void;
 };
 
 export function serverBase(settings: GenerateSettings): string {
     return (settings.server ?? DEFAULT_SERVER).replace(/\/$/, "");
 }
 
-async function queuePrompt(base: string, prompt: ApiPrompt): Promise<string> {
+async function queuePrompt(base: string, prompt: ApiPrompt, clientId?: string): Promise<string> {
     const response = await fetch(`${base}/prompt`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({prompt}),
+        body: JSON.stringify({prompt, client_id: clientId}),
     });
     const body = await response.json();
     if (!response.ok) {
@@ -62,7 +72,12 @@ async function queuePrompt(base: string, prompt: ApiPrompt): Promise<string> {
     return promptId;
 }
 
-async function waitForHistory(base: string, promptId: string, logger: Logger): Promise<HistoryEntry> {
+async function waitForHistory(
+    base: string,
+    promptId: string,
+    logger: Logger,
+    progress: ProgressSocket | null,
+): Promise<HistoryEntry> {
     const started = Date.now();
     let lastLog = started;
     while (Date.now() - started < TIMEOUT_MS) {
@@ -82,10 +97,10 @@ async function waitForHistory(base: string, promptId: string, logger: Logger): P
             return entry;
         }
         if (now - lastLog >= PROGRESS_LOG_MS) {
-            logger.log(`[comfyui] en cours (${seconds}s)…`, promptId);
+            logger.log(`[comfyui] en cours (${seconds}s)${progress?.describe() ?? ""}…`, promptId);
             lastLog = now;
         }
-        await Bun.sleep(POLL_MS);
+        await (progress ? progress.pause(POLL_MS) : Bun.sleep(POLL_MS));
     }
     throw new Error(`Pas de résultat après ${TIMEOUT_MS / 1000}s (prompt_id ${promptId})`);
 }
@@ -200,7 +215,8 @@ async function downloadFile(base: string, file: HistoryFile, directory: string, 
 
 /**
  * Envoie un graphe API, attend la fin, et enregistre les fichiers produits
- * dans `settings.outputDir`. Renvoie leurs chemins locaux.
+ * dans `settings.outputDir`. Renvoie leurs chemins locaux. La fin est lue dans
+ * `/history` ; avec `settings.onProgress`, le WebSocket la signale plus tôt.
  */
 export async function runGraph(graph: ApiPrompt, settings: GenerateSettings = {}): Promise<string[]> {
     const base = serverBase(settings);
@@ -208,10 +224,20 @@ export async function runGraph(graph: ApiPrompt, settings: GenerateSettings = {}
     const outputDir =
         settings.outputDir ?? join(dirname(fileURLToPath(import.meta.url)), "..", "output");
 
-    const promptId = await queuePrompt(base, graph);
-    logger.log(`[comfyui] en file`, promptId);
-
-    const entry = await waitForHistory(base, promptId, logger);
+    const progress = settings.onProgress
+        ? await ProgressSocket.open(base, graph, settings.onProgress, logger)
+        : null;
+    let promptId: string;
+    let entry: HistoryEntry;
+    try {
+        promptId = await queuePrompt(base, graph, progress?.clientId);
+        logger.log(`[comfyui] en file`, promptId);
+        progress?.follow(promptId);
+        entry = await waitForHistory(base, promptId, logger, progress);
+        await progress?.waitForEnd(END_GRACE_MS);
+    } finally {
+        progress?.close();
+    }
     const files = collectFiles(entry);
     if (files.length === 0) {
         throw new Error(`Aucun fichier dans l'historique de ${promptId}`);

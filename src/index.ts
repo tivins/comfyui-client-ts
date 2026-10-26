@@ -1,6 +1,8 @@
 export {DEFAULT_SERVER, clearHistory, runGraph} from "./client";
 export type {GenerateSettings} from "./client";
 
+export type {GenerationProgress} from "./progress";
+
 export {silentLogger} from "./logger";
 export type {Logger} from "./logger";
 

@@ -6,6 +6,7 @@ Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax 
 | --- | --- |
 | `src/client.ts` | `runGraph` (envoi, attente, téléchargement), `clearHistory`, `GenerateSettings` |
 | `src/logger.ts` | `Logger`, `silentLogger` |
+| `src/progress.ts` | `GenerationProgress`, écoute du WebSocket `/ws` pour `onProgress` |
 | `src/workflow.ts` | types du graphe API, `Aspect`, `Sampler`, `Scheduler`, `LoRA` |
 | `src/models/*.ts` | un fichier par modèle : défauts, options, graphe, fonction `generate…` |
 | `workflows/*.json` | graphes exportés de l'interface, que les tests comparent aux graphes produits |
@@ -93,6 +94,7 @@ const paths = await generateQwenImage(options, settings);
 | `deleteFromServer` | absent : les fichiers, l'historique et la file restent |
 | `logger` | `silentLogger` : rien n'est affiché |
 | `meta` | absent |
+| `onProgress` | absent : pas de WebSocket, la fin est lue dans `/history` toutes les 2 s |
 
 `Aspect`, `Sampler` et `Scheduler` sont des objets de littéraux. `Sampler.Euler` vaut `"euler"`. ComfyUI reçoit cette chaîne.
 
@@ -117,6 +119,18 @@ ComfyUI garde en cache le résultat du dernier graphe. Relancer un graphe identi
 ```ts
 await generateQwenImage(options, { ...settings, logger: console });
 ```
+
+`onProgress` reçoit l'avancement en direct. `runGraph` ouvre le WebSocket `/ws?clientId=…` de ComfyUI avant `POST /prompt` (qui reçoit le même `client_id`), et appelle le callback à chaque début de nœud et à chaque pas :
+
+```ts
+await generateWan22(options, {
+  ...settings,
+  onProgress: ({ classType, step, nodesDone, nodesTotal }) =>
+    console.log(`${classType} ${step ? `${step.value}/${step.max}` : ""} (nœud ${nodesDone + 1}/${nodesTotal})`),
+});
+```
+
+`GenerationProgress` porte `promptId`, `node` (id du graphe API), `classType`, `nodesDone`, `nodesTotal` (les nœuds repris du cache ne comptent pas) et `step` (`{ value, max }`, ou `null`). Les pas sont donnés par nœud : Wan 2.2 et ses deux samplers donnent deux séries 1→N. Les nœuds sans pas (chargement de modèles, VAE decode) n'envoient que leur début. Le WebSocket signale aussi la fin, ce qui évite d'attendre le prochain passage sur `/history`. S'il est injoignable, `logger.warn` le signale et la génération se fait sans suivi. Le logger ajoute le dernier avancement à son message « en cours ». Les aperçus (messages binaires, avec `--preview-method`) sont ignorés.
 
 `meta` s'ajoute au `_meta` d'un nœud du graphe (l'UNET pour Qwen, Krea 2 et MiniMax Music 3, l'image d'entrée pour Wan 2.2 et MiniMax H3). ComfyUI recopie le graphe dans le chunk `prompt` des fichiers produits, où `readPngMetadata` (images) et `readMp3Metadata` (morceaux) le relisent : c'est un moyen de faire passer des informations d'une étape à l'autre d'un workflow. Les fonctions `build…Prompt` prennent le même objet en second argument.
 
