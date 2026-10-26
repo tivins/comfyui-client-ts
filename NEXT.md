@@ -11,11 +11,12 @@
 - Les morceaux et images générés sont dans `output/` (ignoré par git, déplacé ici avec la lib). Ils s'écoutent avec la page de `/data/media/localGeneration`.
 
 ## En attente de toi
+- [ ] `nodesTotal` surestimé : sur Wan 2.2 (2026-10-26, réglages par défaut, 1323 s soit 22 min, ~64 s par pas), 26 nœuds exécutés sur 32 annoncés, à cause des branches non prises des `ComfySwitchNode` (LoRA lightning). Options : le documenter comme un maximum, ou résoudre les interrupteurs à entrée constante dans le graphe pour compter juste.
 - [ ] Lyrics générées par LLM local : des didascalies `(Guitars chug)` sont chantées. Conseils donnés le 2026-10-18 (règles de lyrics dans le prompt, filtre qui retire `(…)` et les tags hors liste, schéma JSON en sections avec `tag` en enum, ou deux appels lyrics → caption). Rien codé. À décider : quoi faire, et où (projet du prompt LLM, ou un `sanitizeLyrics` ici).
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
 ## Prochaines étapes
-- Essayer `onProgress` sur Wan 2.2 et MiniMax H3 (runs de plusieurs minutes : deux samplers, nœuds API). Puis le brancher dans les CLI de llm-multi-ts (`Step` de ts-ui).
+- Essayer `onProgress` sur MiniMax H3 (nœuds API, ~8 min). Puis le brancher dans les CLI de llm-multi-ts (`Step` de ts-ui).
 - `TODO.md` : lire les métadonnées mp4 via le graphe d'API (un vieux mp4 de `ComfyUI/input` les porte dans le tag `comment`, format VideoHelperSuite).
   - Attendu aussi par diffusion_explorer (2026-10-21) : son `bun scan` indexe les vidéos sans provenance tant que ce lecteur manque.
 - Peut-être une fonction `generateKrea2Inpaint` si la retouche locale finit par marcher (pour l'instant, non).
