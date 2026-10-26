@@ -1,7 +1,7 @@
 # Reprise — comfyui-client-ts (2026-10-26)
 
 ## Où j'en suis
-- 0.23.1 poussée avec le tag `v0.23.1` : `GenerateSettings.onProgress` (0.23.0), `nodesTotal` documenté comme un maximum. Essayé sur Qwen (16 s), Wan 2.2 (1323 s, ~64 s par pas) et MiniMax H3 (477 s, ~22 s par pas) : nœuds et pas remontent bien.
+- 0.23.1 poussée avec le tag `v0.23.1` : `GenerateSettings.onProgress` (0.23.0), `nodesTotal` documenté comme un maximum. Essayé sur Qwen (16 s), Wan 2.2 (1323 s, ~64 s par pas) et MiniMax H3 (477 s, ~22 s par pas) : nœuds et pas remontent bien. Branché dans llm-multi-ts 0.27.0 (spinner).
 - 0.22.0 poussée avec le tag `v0.22.0` : `generateMiniMaxH3` (MiniMax H3 I2V avec son ; défauts 768², 5 s, 20 pas sans Turbo, NVFP4). 768² 5 s : 478 s. Le Turbo brouille les détails (essais dans `output/minimax-h3/`, `compare_A_C_D.mp4`). Modèles par `download_minimax_h3.sh` (dépôt comfyui, poussé) ; l'int8 (`download_minimax_h3.sh int8`) pas téléchargé, à prendre pour comparer si besoin.
 - 0.21.0 poussée avec le tag `v0.21.0` : `generateSeedVR2VideoUpscale` (SeedVR2 7B, morceaux de 33 images). 81 images 640² en ×2 : 373 s, 13,9 Go. Vidéos d'essai dans `output/seedvr2-video/` (dont un côte à côte lanczos | vidéo | image par image). 161 images (vidéo interpolée) pas essayé : ~12 min estimées.
 - 0.20.0 poussée avec le tag `v0.20.0` (`91c6be3`) : `generateFrameInterpolation` (RIFE/FILM). Script `download_frame_interpolation.sh` commité dans le dépôt comfyui (`936a1e3`, poussé). RIFE reste le défaut, FILM au choix par `modelName`. Essais sur deux vidéos dans `output/interpolation/` : aucun artefact gênant, FILM un peu plus cohérent sur les brins fins.
@@ -15,7 +15,6 @@
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
 ## Prochaines étapes
-- Brancher `onProgress` dans les CLI de llm-multi-ts (`Step` de ts-ui) : afficher « chargement… » tant que le premier pas d'un sampler n'est pas arrivé.
 - `TODO.md` : lire les métadonnées mp4 via le graphe d'API (un vieux mp4 de `ComfyUI/input` les porte dans le tag `comment`, format VideoHelperSuite).
   - Attendu aussi par diffusion_explorer (2026-10-21) : son `bun scan` indexe les vidéos sans provenance tant que ce lecteur manque.
 - Peut-être une fonction `generateKrea2Inpaint` si la retouche locale finit par marcher (pour l'instant, non).
