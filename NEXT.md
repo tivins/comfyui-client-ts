@@ -11,7 +11,7 @@
 - Les morceaux et images générés sont dans `output/` (ignoré par git, déplacé ici avec la lib). Ils s'écoutent avec la page de `/data/media/localGeneration`.
 
 ## En attente de toi
-- [ ] Essayer FLUX.2 klein (9B, ou 4B Apache-2.0) sur l'édition à références seulement : avatar Pixar depuis photo, scène à deux personnes (bannière), grain de beauté de persona_helper. Pas FLUX.1, pas FLUX.2 dev (trop lourd pour 16 Go). Avis donné le 2026-11-09, rien téléchargé.
+- [ ] Essai **FLUX 3 Image Klein** (sorti le 2026-10-15, 5,6B, jusqu'à 10 références, licence Kommunity : usage commercial gratuit sous 5 M$ de CA) sur l'avatar Pixar depuis photo et la scène à deux personnes. Bloqué sur toi : accepter la licence sur https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy (le téléchargement répond 403), accord pour passer ComfyUI de 0.37.0 (`a7169322`) à ≥ 0.41.1, accord pour ~11 Go (int8 distillé 5,8 Go, `qwen3vl_4b_int8_convrot` 4,9 Go, `flux2-vae` 0,3 Go). Le dépôt fournit des graphes `workflows/flux3_klein_int8_mi2i.json` (plusieurs références).
 - [ ] Lyrics générées par LLM local : des didascalies `(Guitars chug)` sont chantées. Conseils donnés le 2026-10-18 (règles de lyrics dans le prompt, filtre qui retire `(…)` et les tags hors liste, schéma JSON en sections avec `tag` en enum, ou deux appels lyrics → caption). Rien codé. À décider : quoi faire, et où (projet du prompt LLM, ou un `sanitizeLyrics` ici).
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
