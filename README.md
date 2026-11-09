@@ -1,6 +1,6 @@
 # comfyui-client
 
-Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, FLUX 3 Image Klein, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
 
 | Fichier | Contenu |
 | --- | --- |
@@ -261,6 +261,36 @@ Les champs de `Krea2Options` sont repris. Ceux qui s'ajoutent :
 La consigne est une instruction d'édition. Ce qu'elle ne mentionne pas (tenue, accessoires, fond, cadrage, lumière) est repris de la référence. `negativePrompt` part dans un second `Krea2EditGroundedEncode` sur la même image ; il ne compte qu'à `cfg` > 1 et le paquet le laisse vide. Le préfixe des fichiers enregistrés est `Krea2Edit`.
 
 `uploadImage(path, settings)` renvoie la valeur à mettre dans `LoadImage.inputs.image`. Si un fichier identique existe déjà dans `input/`, ComfyUI le réutilise. S'il existe un fichier différent sous le même nom, ComfyUI enregistre la nouvelle image sous `nom (1).png`.
+
+## FLUX 3 Image Klein
+
+`buildFlux3KleinPrompt` reprend le sous-graphe « Multiple image to image (FLUX 3 Klein) » des workflows `flux3_klein_int8_mi2i` et `flux3_klein_int8_t2i` du dépôt [black-forest-labs/flux-3-image-klein-comfy](https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy), sans le prompt upsampler ni les boîtes de placement. Un seul modèle (5,6B, distillé, 16 pas, cfg fixé à 1) fait le texte vers image et l'édition avec **0 à 10 images de référence**. Le prompt les nomme dans l'ordre : « the man from the first image », « the woman from the second image ». Sans référence, `ReferenceMultiLatent` est retiré du graphe.
+
+```ts
+import { generateFlux3Klein, FLUX3_KLEIN_DEFAULTS } from "comfyui-client";
+
+const paths = await generateFlux3Klein({
+  ...FLUX3_KLEIN_DEFAULTS,
+  prompt: "A 3D animated scene: the man from the first image and the old woman from the second image play chess in a park.",
+  referenceImages: ["/data/refs/man.png", "/data/refs/woman.png"],
+  width: 1280,
+  height: 720,
+});
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `referenceImages` | — | un `LoadImage` par image, sur `ReferenceMultiLatent.images.image0…` ; chemins locaux pour `generateFlux3Klein` (envoyés avec `uploadImage`), noms côté serveur pour `buildFlux3KleinPrompt` |
+| `referenceMegapixels` | `1` | `ReferenceMultiLatent` : taille de chaque référence, proportions gardées |
+| `width` × `height` | 1024 × 1024 | `EmptyFlux2LatentImage`, multiples de 16 |
+| `steps` | `16` | `KSampler` (4 à 16 pour le distillé, 50 pour le modèle de base) |
+| `alpha` | `16` | `ModelSamplingFlux` : shift = ln(alpha) |
+| `seed`, `samplerName`, `scheduler`, `batchSize` | 42, euler, simple, 1 | `KSampler`, `EmptyFlux2LatentImage` |
+| `unetName`, `clipName`, `vaeName` | fichiers ci-dessous | loaders ; CLIP chargé en type `flux3` |
+
+Fichiers côté serveur (dépôt gated, *FLUX Kommunity License* : usage commercial gratuit sous 5 M$ de chiffre d'affaires ; script `download_flux3_klein.sh` du dépôt comfyui) : UNET `flux3-image-klein-int8-convrot.safetensors`, CLIP `qwen3vl_4b_int8_convrot.safetensors`, VAE `flux2-vae.safetensors`. Demande ComfyUI 0.41.0 ou plus. Le préfixe des fichiers enregistrés est `Flux3Klein`.
+
+Sur une RTX 5060 Ti : environ 12 s pour 1 Mpx sans référence, 15 s avec une référence, 24 s en 1280 × 720 avec deux. Comparé à Krea 2 Identity Edit sur des portraits style Pixar : cadrage et consigne mieux suivis, mais caricatures moins belles et personnages qui semblent collés sur le fond.
 
 ## Wan 2.2 image → vidéo
 

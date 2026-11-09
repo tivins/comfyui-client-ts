@@ -38,6 +38,14 @@ export {
 } from "./models/krea2";
 export type {Krea2Options, Krea2EditOptions} from "./models/krea2";
 
+export {
+    FLUX3_KLEIN_DEFAULTS,
+    FLUX3_KLEIN_MAX_REFERENCES,
+    buildFlux3KleinPrompt,
+    generateFlux3Klein,
+} from "./models/flux3-klein";
+export type {Flux3KleinOptions} from "./models/flux3-klein";
+
 export {WAN22_DEFAULTS, buildWan22Prompt, generateWan22} from "./models/wan22";
 export type {Wan22Options} from "./models/wan22";
 

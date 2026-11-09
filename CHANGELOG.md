@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.0 — 2026-11-09
+
+`generateFlux3Klein` génère une image avec FLUX 3 Image Klein (BFL, 5,6B, distillé int8), sans référence ou avec 1 à 10 images de référence (`referenceImages`, chemins locaux envoyés avec `uploadImage`), que le prompt nomme dans l'ordre (« the first image »…). `buildFlux3KleinPrompt` reprend le sous-graphe des workflows `flux3_klein_int8_mi2i` / `t2i` du dépôt Comfy de BFL, sans prompt upsampler ni boîtes ; sans référence, `ReferenceMultiLatent` est retiré. `Flux3KleinOptions` porte `prompt`, `referenceImages`, `width`, `height`, `seed`, `steps`, `alpha` (shift ln(alpha)), `referenceMegapixels`, `batchSize`, le sampler et les fichiers. `FLUX3_KLEIN_DEFAULTS` : 1024², 16 pas, alpha 16, références à 1 Mpx. `FLUX3_KLEIN_MAX_REFERENCES` vaut 10 ; au-delà, une erreur. Demande ComfyUI ≥ 0.41.0. Sur une RTX 5060 Ti : 12 s à 1 Mpx sans référence, 24 s en 1280 × 720 avec deux.
+
 ## 0.23.1 — 2026-10-26
 
 `GenerationProgress.nodesTotal` est documenté comme un maximum : la branche non prise d'un `ComfySwitchNode` ne s'exécute pas, et `nodesDone` n'atteint alors pas le total (Wan 2.2 : 26 nœuds sur 32). Le README le dit, avec ce qu'ont montré les essais sur le serveur : les pas des samplers mesurent mieux l'avancement, et le chargement d'un modèle se fait souvent au début du sampler, avant son premier pas. Essais avec `onProgress` sur une RTX 5060 Ti : Qwen 8 pas (16 s), Wan 2.2 par défaut (1323 s, deux séries de 10 pas, environ 64 s par pas), MiniMax H3 par défaut (477 s, 20 pas d'environ 22 s, 14 nœuds sur 14). Aucun changement de code.

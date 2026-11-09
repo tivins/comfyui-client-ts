@@ -1,6 +1,7 @@
 # Reprise — comfyui-client-ts (2026-11-09)
 
 ## Où j'en suis
+- 0.24.0 commitée avec le tag `v0.24.0`, **pas poussée** : `generateFlux3Klein` (FLUX 3 Image Klein, 0 à 10 références). Branchée dans llm-multi-ts (`cc-images`). Avis de l'utilisateur : caricatures moins belles que Krea 2, personnages « collés » sur le fond ; Krea 2 reste le défaut.
 - 0.23.1 poussée avec le tag `v0.23.1` : `GenerateSettings.onProgress` (0.23.0), `nodesTotal` documenté comme un maximum. Essayé sur Qwen (16 s), Wan 2.2 (1323 s, ~64 s par pas) et MiniMax H3 (477 s, ~22 s par pas) : nœuds et pas remontent bien. Branché dans llm-multi-ts 0.27.0 (spinner).
 - 0.22.0 poussée avec le tag `v0.22.0` : `generateMiniMaxH3` (MiniMax H3 I2V avec son ; défauts 768², 5 s, 20 pas sans Turbo, NVFP4). 768² 5 s : 478 s. Le Turbo brouille les détails (essais dans `output/minimax-h3/`, `compare_A_C_D.mp4`). Modèles par `download_minimax_h3.sh` (dépôt comfyui, poussé) ; l'int8 (`download_minimax_h3.sh int8`) pas téléchargé, à prendre pour comparer si besoin.
 - 0.21.0 poussée avec le tag `v0.21.0` : `generateSeedVR2VideoUpscale` (SeedVR2 7B, morceaux de 33 images). 81 images 640² en ×2 : 373 s, 13,9 Go. Vidéos d'essai dans `output/seedvr2-video/` (dont un côte à côte lanczos | vidéo | image par image). 161 images (vidéo interpolée) pas essayé : ~12 min estimées.
@@ -11,7 +12,6 @@
 - Les morceaux et images générés sont dans `output/` (ignoré par git, déplacé ici avec la lib). Ils s'écoutent avec la page de `/data/media/localGeneration`.
 
 ## En attente de toi
-- [ ] FLUX 3 Image Klein essayé le 2026-11-09 (ComfyUI v0.41.1) : avatar ~15 s, scène à deux références ~24 s, cadrage de la scène bien suivi. Scripts et planches dans `output/flux3-klein/` (`try.ts` = graphe API fait à la main). À décider : écrire `generateFlux3Klein` (références multiples, sans upsampler) puis le brancher dans llm-multi-ts (`cc-images`) ?
 - [ ] Lyrics générées par LLM local : des didascalies `(Guitars chug)` sont chantées. Conseils donnés le 2026-10-18 (règles de lyrics dans le prompt, filtre qui retire `(…)` et les tags hors liste, schéma JSON en sections avec `tag` en enum, ou deux appels lyrics → caption). Rien codé. À décider : quoi faire, et où (projet du prompt LLM, ou un `sanitizeLyrics` ici).
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
