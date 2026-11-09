@@ -1,4 +1,4 @@
-# Reprise — comfyui-client-ts (2026-10-26)
+# Reprise — comfyui-client-ts (2026-11-09)
 
 ## Où j'en suis
 - 0.23.1 poussée avec le tag `v0.23.1` : `GenerateSettings.onProgress` (0.23.0), `nodesTotal` documenté comme un maximum. Essayé sur Qwen (16 s), Wan 2.2 (1323 s, ~64 s par pas) et MiniMax H3 (477 s, ~22 s par pas) : nœuds et pas remontent bien. Branché dans llm-multi-ts 0.27.0 (spinner).
@@ -11,6 +11,7 @@
 - Les morceaux et images générés sont dans `output/` (ignoré par git, déplacé ici avec la lib). Ils s'écoutent avec la page de `/data/media/localGeneration`.
 
 ## En attente de toi
+- [ ] Essayer FLUX.2 klein (9B, ou 4B Apache-2.0) sur l'édition à références seulement : avatar Pixar depuis photo, scène à deux personnes (bannière), grain de beauté de persona_helper. Pas FLUX.1, pas FLUX.2 dev (trop lourd pour 16 Go). Avis donné le 2026-11-09, rien téléchargé.
 - [ ] Lyrics générées par LLM local : des didascalies `(Guitars chug)` sont chantées. Conseils donnés le 2026-10-18 (règles de lyrics dans le prompt, filtre qui retire `(…)` et les tags hors liste, schéma JSON en sections avec `tag` en enum, ou deux appels lyrics → caption). Rien codé. À décider : quoi faire, et où (projet du prompt LLM, ou un `sanitizeLyrics` ici).
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
