@@ -72,6 +72,18 @@ async function queuePrompt(base: string, prompt: ApiPrompt, clientId?: string): 
     return promptId;
 }
 
+/** Le nœud et le message de `execution_error`, sinon le statut entier. */
+function executionError(status: NonNullable<HistoryEntry["status"]>): string {
+    for (const message of status.messages ?? []) {
+        if (Array.isArray(message) && message[0] === "execution_error") {
+            const data = message[1] as {node_id?: string; node_type?: string; exception_message?: string};
+            const text = (data.exception_message ?? "").split("\n")[0];
+            return `${data.node_type ?? "?"} (nœud ${data.node_id ?? "?"}) : ${text}`;
+        }
+    }
+    return JSON.stringify(status);
+}
+
 async function waitForHistory(
     base: string,
     promptId: string,
@@ -89,10 +101,12 @@ async function waitForHistory(
         const entry = history[promptId];
         const now = Date.now();
         const seconds = Math.round((now - started) / 1000);
+        // ComfyUI 0.41 met un prompt en erreur dans l'historique avec `completed: false` :
+        // `status_str` seul dit l'échec.
+        if (entry?.status?.status_str === "error" || (entry?.status?.completed && entry.status.status_str && entry.status.status_str !== "success")) {
+            throw new Error(`Génération en échec : ${executionError(entry.status)}`);
+        }
         if (entry?.status?.completed) {
-            if (entry.status.status_str && entry.status.status_str !== "success") {
-                throw new Error(`Génération en échec : ${JSON.stringify(entry.status)}`);
-            }
             logger.log(`[comfyui] terminé (${seconds}s)`, promptId);
             return entry;
         }

@@ -84,6 +84,34 @@ async function tempOutputDir(): Promise<string> {
 }
 
 describe("runGraph", () => {
+  test("échoue tout de suite sur un prompt en erreur, même avec completed: false (ComfyUI 0.41)", async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/prompt")) return Response.json({ prompt_id: "abc" });
+      if (url.endsWith("/history/abc")) {
+        return Response.json({
+          abc: {
+            status: {
+              completed: false,
+              status_str: "error",
+              messages: [
+                ["execution_start", { prompt_id: "abc" }],
+                ["execution_error", { node_id: "2", node_type: "KSampler", exception_message: "mat1 and mat2 shapes\n\nTIPS: …" }],
+              ],
+            },
+            outputs: {},
+          },
+        });
+      }
+      throw new Error(`requête inattendue : ${url}`);
+    }) as typeof fetch;
+
+    const started = Date.now();
+    const error = await runGraph(graph, { server: "http://127.0.0.1:9", outputDir: await tempOutputDir() }).catch((e) => e);
+    expect(String(error)).toContain("Génération en échec : KSampler (nœud 2) : mat1 and mat2 shapes");
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
   test("efface les fichiers du serveur, puis retire le prompt de l'historique et de la file", async () => {
     const calls: string[] = [];
     const outputDeleteBodies: unknown[] = [];

@@ -1,7 +1,7 @@
 # Reprise — comfyui-client-ts (2026-11-09)
 
 ## Où j'en suis
-- 0.24.0 commitée avec le tag `v0.24.0`, **pas poussée** : `generateFlux3Klein` (FLUX 3 Image Klein, 0 à 10 références). Branchée dans llm-multi-ts (`cc-images`). Avis de l'utilisateur : caricatures moins belles que Krea 2, personnages « collés » sur le fond ; Krea 2 reste le défaut.
+- 0.24.0 et 0.24.1 (erreur ComfyUI 0.41 vue tout de suite) commitées avec leurs tags, **pas poussées** : `generateFlux3Klein` (FLUX 3 Image Klein, 0 à 10 références). Branchée dans llm-multi-ts (`cc-images`). Avis de l'utilisateur : caricatures moins belles que Krea 2, personnages « collés » sur le fond ; Krea 2 reste le défaut.
 - 0.23.1 poussée avec le tag `v0.23.1` : `GenerateSettings.onProgress` (0.23.0), `nodesTotal` documenté comme un maximum. Essayé sur Qwen (16 s), Wan 2.2 (1323 s, ~64 s par pas) et MiniMax H3 (477 s, ~22 s par pas) : nœuds et pas remontent bien. Branché dans llm-multi-ts 0.27.0 (spinner).
 - 0.22.0 poussée avec le tag `v0.22.0` : `generateMiniMaxH3` (MiniMax H3 I2V avec son ; défauts 768², 5 s, 20 pas sans Turbo, NVFP4). 768² 5 s : 478 s. Le Turbo brouille les détails (essais dans `output/minimax-h3/`, `compare_A_C_D.mp4`). Modèles par `download_minimax_h3.sh` (dépôt comfyui, poussé) ; l'int8 (`download_minimax_h3.sh int8`) pas téléchargé, à prendre pour comparer si besoin.
 - 0.21.0 poussée avec le tag `v0.21.0` : `generateSeedVR2VideoUpscale` (SeedVR2 7B, morceaux de 33 images). 81 images 640² en ×2 : 373 s, 13,9 Go. Vidéos d'essai dans `output/seedvr2-video/` (dont un côte à côte lanczos | vidéo | image par image). 161 images (vidéo interpolée) pas essayé : ~12 min estimées.

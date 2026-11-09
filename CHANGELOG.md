@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.1 — 2026-11-09
+
+`runGraph` échoue tout de suite quand ComfyUI met le prompt en erreur. ComfyUI 0.41 l'inscrit dans l'historique avec `status_str: "error"` mais `completed: false` : `waitForHistory` attendait jusqu'au délai de 30 min, GPU tenu. Le message d'erreur donne maintenant le type et l'id du nœud fautif, et la première ligne de son exception (`Génération en échec : KSampler (nœud 2) : …`), au lieu du statut entier en JSON.
+
 ## 0.24.0 — 2026-11-09
 
 `generateFlux3Klein` génère une image avec FLUX 3 Image Klein (BFL, 5,6B, distillé int8), sans référence ou avec 1 à 10 images de référence (`referenceImages`, chemins locaux envoyés avec `uploadImage`), que le prompt nomme dans l'ordre (« the first image »…). `buildFlux3KleinPrompt` reprend le sous-graphe des workflows `flux3_klein_int8_mi2i` / `t2i` du dépôt Comfy de BFL, sans prompt upsampler ni boîtes ; sans référence, `ReferenceMultiLatent` est retiré. `Flux3KleinOptions` porte `prompt`, `referenceImages`, `width`, `height`, `seed`, `steps`, `alpha` (shift ln(alpha)), `referenceMegapixels`, `batchSize`, le sampler et les fichiers. `FLUX3_KLEIN_DEFAULTS` : 1024², 16 pas, alpha 16, références à 1 Mpx. `FLUX3_KLEIN_MAX_REFERENCES` vaut 10 ; au-delà, une erreur. Demande ComfyUI ≥ 0.41.0. Sur une RTX 5060 Ti : 12 s à 1 Mpx sans référence, 24 s en 1280 × 720 avec deux.
