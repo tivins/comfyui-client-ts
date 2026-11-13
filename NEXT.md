@@ -1,4 +1,4 @@
-# Reprise — comfyui-client-ts (2026-11-09)
+# Reprise — comfyui-client-ts (2026-11-13)
 
 ## Où j'en suis
 - 0.24.0 et 0.24.1 (erreur ComfyUI 0.41 vue tout de suite) commitées avec leurs tags, **pas poussées** : `generateFlux3Klein` (FLUX 3 Image Klein, 0 à 10 références). Branchée dans llm-multi-ts (`cc-images`). Avis de l'utilisateur : caricatures moins belles que Krea 2, personnages « collés » sur le fond ; Krea 2 reste le défaut.
@@ -12,6 +12,7 @@
 - Les morceaux et images générés sont dans `output/` (ignoré par git, déplacé ici avec la lib). Ils s'écoutent avec la page de `/data/media/localGeneration`.
 
 ## En attente de toi
+- [ ] MiniMax H3 Image : ComfyUI est en 0.45.3 (fait le 2026-11-13). Feu vert attendu pour le téléchargement (~13,7 Go, `download_minimax_h3_image.sh` du dépôt comfyui), puis `generateMiniMaxH3Image` (t2i + édition par références ; 6 pas, CFG 1, euler/simple, 4 à 20 Mpx). Prompt enhancer Qwen3.5 9B (7,3 Go) : laissé de côté pour l'instant.
 - [ ] Lyrics générées par LLM local : des didascalies `(Guitars chug)` sont chantées. Conseils donnés le 2026-10-18 (règles de lyrics dans le prompt, filtre qui retire `(…)` et les tags hors liste, schéma JSON en sections avec `tag` en enum, ou deux appels lyrics → caption). Rien codé. À décider : quoi faire, et où (projet du prompt LLM, ou un `sanitizeLyrics` ici).
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
