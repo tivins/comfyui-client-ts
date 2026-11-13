@@ -1,6 +1,6 @@
 # comfyui-client
 
-Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, FLUX 3 Image Klein, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, FLUX 3 Image Klein, MiniMax H3 Image, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
 
 | Fichier | Contenu |
 | --- | --- |
@@ -291,6 +291,34 @@ const paths = await generateFlux3Klein({
 Fichiers côté serveur (dépôt gated, *FLUX Kommunity License* : usage commercial gratuit sous 5 M$ de chiffre d'affaires ; script `download_flux3_klein.sh` du dépôt comfyui) : UNET `flux3-image-klein-int8-convrot.safetensors`, CLIP `qwen3vl_4b_int8_convrot.safetensors`, VAE `flux2-vae.safetensors`. Demande ComfyUI 0.41.0 ou plus. Le préfixe des fichiers enregistrés est `Flux3Klein`.
 
 Sur une RTX 5060 Ti : environ 12 s pour 1 Mpx sans référence, 15 s avec une référence, 24 s en 1280 × 720 avec deux. Comparé à Krea 2 Identity Edit sur des portraits style Pixar : cadrage et consigne mieux suivis, mais caricatures moins belles et personnages qui semblent collés sur le fond.
+
+## MiniMax H3 Image
+
+`buildMiniMaxH3ImagePrompt` reprend les modèles de workflow « MiniMax-H3-Image: Text to Image » et « Image Edit » de ComfyUI (`image_minimax_h3_image_t2i`, `image_minimax_h3_image_edit`), sans le prompt enhancer ni le redimensionnement des images en amont. Un seul nœud, `MiniMaxH3ImageConditioning`, fait le texte vers image et l'édition avec **0 à 100 images** : il encode le prompt avec Qwen3-VL 32B (l'encodeur de MiniMax H3 vidéo), voit les images, les ancre en latents de référence avec le VAE et fournit le latent vide. Le prompt les nomme `<Picture 1>`, `<Picture 2>`… ; `<Picture 1>` est l'image à éditer. Le `KSampler` tourne en 6 pas, cfg 1, avec le conditionnement mis à zéro en négatif.
+
+```ts
+import { generateMiniMaxH3Image, MINIMAX_H3_IMAGE_DEFAULTS } from "comfyui-client";
+
+const paths = await generateMiniMaxH3Image({
+  ...MINIMAX_H3_IMAGE_DEFAULTS,
+  prompt: "Put a small knitted red scarf around the neck of the cat in <Picture 1> and make it snow gently in the garden.",
+  referenceImages: ["/data/refs/cat.png"],
+});
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `referenceImages` | `[]` | un `LoadImage` par image, sur `MiniMaxH3ImageConditioning.images.image_1…` ; chemins locaux pour `generateMiniMaxH3Image` (envoyés avec `uploadImage`), noms côté serveur pour `buildMiniMaxH3ImagePrompt`. Le nœud les met à l'échelle : côté court entre 1024 et 2048 |
+| `width` × `height` | 0 × 0 | `MiniMaxH3ImageConditioning`, multiples de 32. 0 : 2048² sans image, sinon la taille de la première image après mise à l'échelle |
+| `steps` | `6` | `KSampler` |
+| `seed`, `samplerName`, `scheduler` | 42, euler, simple | `KSampler` |
+| `unetName`, `clipName`, `vaeName` | fichiers ci-dessous | loaders ; CLIP chargé en type `minimax` |
+
+Le modèle est réglé pour 2048² (4 Mpx), rend mal en dessous et va jusqu'à ~20 Mpx (16 Mpx conseillés : 4096², 4736 × 3552, 5472 × 3072…). En édition avec `width` et `height` à 0, une petite image donne une petite sortie (960 × 1472 → 1024 × 1568) : donner la taille voulue, ou agrandir l'image avant.
+
+Fichiers côté serveur (script `download_minimax_h3_image.sh` du dépôt comfyui) : UNET `minimax_h3_image_pruned_w4a8.safetensors` (12,5 Go, `MiniMaxH3ImageModel.W4a8`), CLIP `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` (celui de MiniMax H3 vidéo), VAE `minimax_h3_image_vae_fp16.safetensors`. Les modèles de workflow prennent l'int8 (`MiniMaxH3ImageModel.Int8`, 21 Go, `download_minimax_h3_image.sh int8`). Demande ComfyUI 0.45.0 ou plus. Licence MiniMax propre au modèle : autorisation à demander au-delà de 1 M$ de revenu annuel ou pour un service hébergé ouvert à des tiers. Le préfixe des fichiers enregistrés est `MiniMaxH3Image`.
+
+Sur une RTX 5060 Ti, modèles froids : 27 s pour 2048² sans image (15,5 Go de VRAM), 34 s pour une édition en 1024 × 1568.
 
 ## Wan 2.2 image → vidéo
 

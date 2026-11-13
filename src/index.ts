@@ -58,6 +58,15 @@ export {
 } from "./models/minimax-h3";
 export type {MiniMaxH3Options} from "./models/minimax-h3";
 
+export {
+    MINIMAX_H3_IMAGE_DEFAULTS,
+    MINIMAX_H3_IMAGE_MAX_REFERENCES,
+    MiniMaxH3ImageModel,
+    buildMiniMaxH3ImagePrompt,
+    generateMiniMaxH3Image,
+} from "./models/minimax-h3-image";
+export type {MiniMaxH3ImageOptions} from "./models/minimax-h3-image";
+
 export {MINIMAX_MUSIC3_DEFAULTS, buildMiniMaxMusic3Prompt, generateMiniMaxMusic3} from "./models/minimax-music3";
 export type {MiniMaxMusic3Options} from "./models/minimax-music3";
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.0 — 2026-11-13
+
+`generateMiniMaxH3Image` génère une image avec MiniMax H3 Image, sans image ou avec 1 à 100 images (`referenceImages`, chemins locaux envoyés avec `uploadImage`) que le prompt nomme `<Picture 1>`, `<Picture 2>`… ; la première est l'image à éditer. `buildMiniMaxH3ImagePrompt` reprend les modèles de workflow `image_minimax_h3_image_t2i` et `image_minimax_h3_image_edit` de ComfyUI, sans prompt enhancer ni redimensionnement en amont : `MiniMaxH3ImageConditioning` met lui-même les images à l'échelle. `MiniMaxH3ImageOptions` porte `prompt`, `referenceImages`, `width`, `height` (0 : 2048² sans image, la taille de la première image sinon), `seed`, `steps`, le sampler et les fichiers. `MINIMAX_H3_IMAGE_DEFAULTS` : 6 pas, cfg 1, euler / simple, diffusion w4a8 (`MiniMaxH3ImageModel.W4a8`, 12,5 Go) et l'encodeur Qwen3-VL NVFP4 de MiniMax H3 vidéo. `MINIMAX_H3_IMAGE_MAX_REFERENCES` vaut 100 ; au-delà, une erreur. Demande ComfyUI ≥ 0.45.0. Sur une RTX 5060 Ti : 27 s pour 2048² sans image, 34 s pour une édition en 1024 × 1568, modèles froids.
+
 ## 0.24.1 — 2026-11-09
 
 `runGraph` échoue tout de suite quand ComfyUI met le prompt en erreur. ComfyUI 0.41 l'inscrit dans l'historique avec `status_str: "error"` mais `completed: false` : `waitForHistory` attendait jusqu'au délai de 30 min, GPU tenu. Le message d'erreur donne maintenant le type et l'id du nœud fautif, et la première ligne de son exception (`Génération en échec : KSampler (nœud 2) : …`), au lieu du statut entier en JSON.
