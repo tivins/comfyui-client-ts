@@ -2,7 +2,7 @@
 
 ## Où j'en suis
 - 0.25.0 (`generateMiniMaxH3Image`, ComfyUI ≥ 0.45) poussée avec les tags `v0.24.0`, `v0.24.1`, `v0.25.0`. Branchée dans llm-multi-ts 0.33.0 (`"model": "minimax-h3-image"`).
-- ComfyUI passé en 0.45.3 le 2026-11-13 : Krea 2 et MiniMax H3 Image vérifiés ; MiniMax H3 vidéo, Music 3, Qwen, FLUX 3 Klein, SeedVR2 pas encore revérifiés.
+- ComfyUI 0.45.3 (2026-11-13) : Krea 2, MiniMax H3 Image, H3 vidéo (481 s, inchangé) et Music 3 (60 s en 138 s) vérifiés ; Qwen, FLUX 3 Klein, SeedVR2 et l'interpolation pas encore. Essais dans `output/comfy-0.45/`.
 
 ## En attente de toi
 - [ ] Lyrics générées par LLM local : des didascalies `(Guitars chug)` sont chantées. Conseils donnés le 2026-10-18 (règles de lyrics dans le prompt, filtre qui retire `(…)` et les tags hors liste, schéma JSON en sections avec `tag` en enum, ou deux appels lyrics → caption). Rien codé. À décider : quoi faire, et où (projet du prompt LLM, ou un `sanitizeLyrics` ici).
