@@ -1,7 +1,7 @@
 # Reprise — comfyui-client-ts (2026-11-13)
 
 ## Où j'en suis
-- 0.25.0 (`generateMiniMaxH3Image`, ComfyUI ≥ 0.45) poussée avec les tags `v0.24.0`, `v0.24.1`, `v0.25.0`. Pas encore branchée dans llm-multi-ts (noté dans son `next.md`).
+- 0.25.0 (`generateMiniMaxH3Image`, ComfyUI ≥ 0.45) poussée avec les tags `v0.24.0`, `v0.24.1`, `v0.25.0`. Branchée dans llm-multi-ts 0.33.0 (`"model": "minimax-h3-image"`).
 - ComfyUI passé en 0.45.3 le 2026-11-13 : Krea 2 et MiniMax H3 Image vérifiés ; MiniMax H3 vidéo, Music 3, Qwen, FLUX 3 Klein, SeedVR2 pas encore revérifiés.
 
 ## En attente de toi
