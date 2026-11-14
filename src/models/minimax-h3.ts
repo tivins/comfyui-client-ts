@@ -1,6 +1,6 @@
 import {runGraph, type GenerateSettings} from "../client";
 import {uploadImage} from "../upload";
-import {applyMeta, type ApiInput, type ApiPrompt} from "../workflow";
+import {applyMeta, chainLoras, type ApiInput, type ApiPrompt, type LoRA} from "../workflow";
 
 /**
  * Diffusions FL2VA (image → vidéo) à placer dans `models/diffusion_models/`,
@@ -28,6 +28,7 @@ export const MINIMAX_H3_DEFAULTS = {
     duration: 5,
     steps: 20,
     turbo: false,
+    loras: [],
     unetName: MiniMaxH3Model.Nvfp4,
 } as const satisfies Omit<MiniMaxH3Options, "inputImage" | "prompt">;
 
@@ -56,6 +57,11 @@ export type MiniMaxH3Options = {
      * diffusion NVFP4 du moins.
      */
     turbo: boolean;
+    /**
+     * LoRA entraînées pour MiniMax H3 (fichiers de `models/loras/`), enchaînées après la diffusion
+     * et après la LoRA Turbo si `turbo`. `[]` : graphe du modèle de workflow.
+     */
+    loras: LoRA[];
     /** Nom de fichier dans `models/diffusion_models/` ; voir `MiniMaxH3Model`. */
     unetName: string;
 };
@@ -79,7 +85,9 @@ export function minimaxH3FrameCount(duration: number): number {
  * sans CFG (`BasicGuider`). Le latent est décodé en images par le VAE vidéo
  * (105:10) et en son stéréo 32 kHz par le VAE audio (105:23), réunis par
  * `CreateVideo` à 24 images/s. Les interrupteurs Turbo du modèle sont résolus :
- * la LoRA (105:121) n'est dans le graphe qu'avec `turbo`.
+ * la LoRA (105:121) n'est dans le graphe qu'avec `turbo`. Les `loras` suivent,
+ * en `LoraLoaderModelOnly` numérotés à partir de 130, et alimentent le
+ * scheduler (105:9) et le guider (105:16).
  *
  * `meta` s'ajoute au `_meta` de la première image (114).
  */
@@ -232,6 +240,9 @@ export function buildMiniMaxH3Prompt(options: MiniMaxH3Options, meta: Record<str
             _meta: {},
         };
     }
+
+    chainLoras(opts, options.loras, model, "105:16", 130);
+    opts["105:9"]!.inputs.model = opts["105:16"]!.inputs.model!;
 
     if (options.lastImage !== null) {
         opts["117"] = {

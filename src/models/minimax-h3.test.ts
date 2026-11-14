@@ -93,6 +93,28 @@ describe("buildMiniMaxH3Prompt", () => {
     expect(graph["105:9"]?.inputs.steps).toBe(8);
   });
 
+  test("loras s'enchaînent après la diffusion et alimentent scheduler et guider", () => {
+    const graph = buildMiniMaxH3Prompt({
+      ...options,
+      loras: [{ model: "a.safetensors", weight: 0.4 }, { model: "b.safetensors", weight: 1 }],
+    });
+
+    expect(graph["130"]?.class_type).toBe("LoraLoaderModelOnly");
+    expect(graph["130"]?.inputs).toEqual({ lora_name: "a.safetensors", strength_model: 0.4, model: ["105:6", 0] });
+    expect(graph["131"]?.inputs).toEqual({ lora_name: "b.safetensors", strength_model: 1, model: ["130", 0] });
+    expect(graph["105:9"]?.inputs.model).toEqual(["131", 0]);
+    expect(graph["105:16"]?.inputs.model).toEqual(["131", 0]);
+  });
+
+  test("avec turbo, les loras suivent la LoRA Turbo", () => {
+    const graph = buildMiniMaxH3Prompt({ ...options, turbo: true, loras: [{ model: "a.safetensors", weight: 0.4 }] });
+
+    expect(graph["105:121"]?.inputs.model).toEqual(["105:6", 0]);
+    expect(graph["130"]?.inputs.model).toEqual(["105:121", 0]);
+    expect(graph["105:9"]?.inputs.model).toEqual(["130", 0]);
+    expect(graph["105:16"]?.inputs.model).toEqual(["130", 0]);
+  });
+
   test("lastImage ajoute la dernière image", () => {
     const graph = buildMiniMaxH3Prompt({ ...options, lastImage: "end.png" });
 
