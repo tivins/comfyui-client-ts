@@ -1,6 +1,7 @@
-# Reprise — comfyui-client-ts (2026-11-13)
+# Reprise — comfyui-client-ts (2026-11-14)
 
 ## Où j'en suis
+- 0.26.0 (`MiniMaxH3Options.loras`, demandé par llm-multi-ts) commitée et taguée `v0.26.0`, pas poussée ; pas essayée sur le serveur.
 - 0.25.0 (`generateMiniMaxH3Image`, ComfyUI ≥ 0.45) poussée avec les tags `v0.24.0`, `v0.24.1`, `v0.25.0`. Branchée dans llm-multi-ts 0.33.0 (`"model": "minimax-h3-image"`).
 - ComfyUI 0.45.3 (2026-11-13) : Krea 2, MiniMax H3 Image, H3 vidéo (481 s, inchangé) et Music 3 (60 s en 138 s) vérifiés ; Qwen, FLUX 3 Klein, SeedVR2 et l'interpolation pas encore. Essais dans `output/comfy-0.45/`.
 
