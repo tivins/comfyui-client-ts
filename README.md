@@ -370,7 +370,7 @@ const paths = await generateMiniMaxH3({
 | `duration` | 5 | `round(duration × 24)` images, arrondi au-dessus à 17k + 5 : 5 s → 124 images (`minimaxH3FrameCount`) |
 | `steps` | 20 | `BasicScheduler` (sans `turbo`) |
 | `turbo` | `false` | LoRA Turbo 8 pas v1.1 768p, 8 pas : `steps` est ignoré |
-| `loras` | `[]` | `LoraLoaderModelOnly` enchaînés après la diffusion (et après la LoRA Turbo avec `turbo`), `{ model, weight }` : LoRA entraînées pour MiniMax H3 seulement, fichiers de `models/loras/` |
+| `loras` | `[]` | `LoraLoaderModelOnly` enchaînés après la diffusion (et après la LoRA Turbo avec `turbo`), `{ model, weight }` : LoRA entraînées pour MiniMax H3 seulement, fichiers de `models/loras/`. Avec la diffusion NVFP4, toute LoRA casse le mouvement, même à 0,01 (poids recompressés en 4 bits) ; pas essayé en int8 |
 | `unetName` | `MiniMaxH3Model.Nvfp4` | `UNETLoader` ; `MiniMaxH3Model.Int8` est celui du modèle de workflow |
 
 Mesures sur une RTX 5060 Ti 16 Go, diffusion NVFP4, même image et même graine, 5 s (124 images) :
