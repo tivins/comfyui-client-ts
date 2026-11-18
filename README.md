@@ -27,29 +27,19 @@ Le budget de pixels est fixé à 1 mégapixel. `cfg` et `denoise` du `KSampler` 
 
 ## Dépendance
 
-Ce paquet a son propre dépôt git, `vps:/data/git/comfyui-client-ts`. Le dépôt `vps:/data/git/comfyui` garde l'installation de ComfyUI : scripts de téléchargement des modèles, custom node `comfyui-delete-output`, documentation. Sur la machine de travail, ce paquet est cloné dans `/data/projects/comfyui-client-ts`.
-
-Sur la même machine, par chemin :
+Par git, figé sur une version (un tag `v<version>` par version publiée dans le CHANGELOG) :
 
 ```json
 {
   "dependencies": {
-    "comfyui-client": "file:/data/projects/comfyui-client-ts"
+    "comfyui-client": "github:tivins/comfyui-client-ts#v0.26.1"
   }
 }
 ```
 
-Ailleurs, par git (`vps` est l'alias de `~/.ssh/config`), figé sur une version (un tag `v<version>` par version publiée dans le CHANGELOG) :
+Sur la même machine, par chemin : `"comfyui-client": "file:../comfyui-client-ts"`.
 
-```json
-{
-  "dependencies": {
-    "comfyui-client": "git+ssh://vps:/data/git/comfyui-client-ts#v0.18.2"
-  }
-}
-```
-
-`package.json` expose `"."` vers `src/index.ts`. Un autre projet Bun importe depuis `"comfyui-client"`. `client-ts-example` montre cet appel.
+`package.json` expose `"."` vers `src/index.ts`. Un autre projet Bun importe depuis `"comfyui-client"`. `src/example.ts` montre un appel complet.
 
 ## Générer une image
 
@@ -102,11 +92,7 @@ const paths = await generateQwenImage(options, settings);
 
 `deleteFromServer` efface les fichiers produits du dossier `output` du serveur (`POST /api/output/delete`), puis retire le prompt de l'historique (`POST /history`) et de la file (`POST /queue`), avec `{ delete: [promptId] }`. Seuls les fichiers `type: "output"` sont effacés : ceux de `temp` restent, ComfyUI vide ce dossier au démarrage.
 
-ComfyUI n'a pas de route pour effacer un fichier. `POST /api/output/delete` vient du custom node `comfyui-delete-output`, rangé dans `custom_nodes/` du dépôt comfyui. `install_comfyui.sh` le lie dans `ComfyUI/custom_nodes/`. À la main :
-
-```sh
-ln -sfn /data/softwares/comfyui/custom_nodes/comfyui-delete-output /data/softwares/comfyui/ComfyUI/custom_nodes/comfyui-delete-output
-```
+ComfyUI n'a pas de route pour effacer un fichier. `POST /api/output/delete` vient du custom node `comfyui-delete-output` (pas encore publié), à placer dans `ComfyUI/custom_nodes/`.
 
 Puis redémarrer ComfyUI. Sans le custom node, ComfyUI répond 404 ou 405 : les fichiers restent, `logger.warn` le signale, et l'historique est retiré comme avant. Une autre erreur (chemin hors du dossier `output`, fichier impossible à effacer) lève une exception, et l'historique reste.
 
@@ -244,7 +230,7 @@ const paths = await generateKrea2Edit({
   ...KREA2_EDIT_DEFAULTS,
   prompt: "Place this person in a small café at night, wearing a dark green wool coat, medium shot.",
   negativePrompt: "",
-  referenceImage: "/data/refs/portrait.png",
+  referenceImage: "refs/portrait.png",
 });
 ```
 
@@ -272,7 +258,7 @@ import { generateFlux3Klein, FLUX3_KLEIN_DEFAULTS } from "comfyui-client";
 const paths = await generateFlux3Klein({
   ...FLUX3_KLEIN_DEFAULTS,
   prompt: "A 3D animated scene: the man from the first image and the old woman from the second image play chess in a park.",
-  referenceImages: ["/data/refs/man.png", "/data/refs/woman.png"],
+  referenceImages: ["refs/man.png", "refs/woman.png"],
   width: 1280,
   height: 720,
 });
@@ -302,7 +288,7 @@ import { generateMiniMaxH3Image, MINIMAX_H3_IMAGE_DEFAULTS } from "comfyui-clien
 const paths = await generateMiniMaxH3Image({
   ...MINIMAX_H3_IMAGE_DEFAULTS,
   prompt: "Put a small knitted red scarf around the neck of the cat in <Picture 1> and make it snow gently in the garden.",
-  referenceImages: ["/data/refs/cat.png"],
+  referenceImages: ["refs/cat.png"],
 });
 ```
 
@@ -339,7 +325,7 @@ Le redimensionnement de `WanImageToVideo` n'a pas d'anti-aliasing : une grande i
 ```ts
 import { generateWan22, WAN22_DEFAULTS } from "comfyui-client";
 
-const paths = await generateWan22({ ...WAN22_DEFAULTS, inputImage: "/data/refs/start.png", prompt: "the cat turns its head", lightning: true }, settings);
+const paths = await generateWan22({ ...WAN22_DEFAULTS, inputImage: "refs/start.png", prompt: "the cat turns its head", lightning: true }, settings);
 ```
 
 Fichiers côté serveur : UNET `wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors` et `wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors`, CLIP `umt5_xxl_fp8_e4m3fn_scaled.safetensors`, VAE `wan_2.1_vae.safetensors`, LoRA `wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors` et `…_low_noise.safetensors` (pour `lightning`).
@@ -355,7 +341,7 @@ import { generateMiniMaxH3, MINIMAX_H3_DEFAULTS } from "comfyui-client";
 
 const paths = await generateMiniMaxH3({
   ...MINIMAX_H3_DEFAULTS,
-  inputImage: "/data/refs/kitten.png",
+  inputImage: "refs/kitten.png",
   prompt: "The tabby kitten from <Picture 1> bats the yarn ball with its paw. Static camera.\nAudio: quiet room tone, soft paw taps, a tiny meow.",
 }, settings);
 ```
@@ -478,7 +464,7 @@ import { generateSeedVR2Upscale, SEEDVR2_DEFAULTS } from "comfyui-client";
 
 const paths = await generateSeedVR2Upscale({
   ...SEEDVR2_DEFAULTS,
-  image: "/data/refs/cat.png",
+  image: "refs/cat.png",
   resize: { longerSide: 3840 },
 });
 ```
@@ -506,7 +492,7 @@ import { generateSeedVR2VideoUpscale, SEEDVR2_VIDEO_DEFAULTS } from "comfyui-cli
 
 const paths = await generateSeedVR2VideoUpscale({
   ...SEEDVR2_VIDEO_DEFAULTS,
-  video: "/data/media/videos/wan.mp4",
+  video: "videos/wan.mp4",
 });
 ```
 
@@ -546,7 +532,7 @@ import { generateFrameInterpolation, FRAME_INTERPOLATION_DEFAULTS } from "comfyu
 
 const paths = await generateFrameInterpolation({
   ...FRAME_INTERPOLATION_DEFAULTS,
-  video: "/data/media/videos/wan.mp4",
+  video: "videos/wan.mp4",
 });
 ```
 
@@ -598,8 +584,4 @@ Vérification des types (`@types/bun` et `typescript` sont en devDependencies, `
 bun run typecheck
 ```
 
-Le custom node, dans le dépôt comfyui, a ses propres tests, qui ne chargent pas ComfyUI :
-
-```sh
-cd /data/softwares/comfyui && venv/bin/python custom_nodes/comfyui-delete-output/test_output_files.py
-```
+Le custom node `comfyui-delete-output` a ses propres tests, dans son dépôt.

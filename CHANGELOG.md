@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.1 — 2026-11-18
+
+Publication sur GitHub (`github:tivins/comfyui-client-ts`) sous licence MIT (`LICENSE`, champ `license` du `package.json`). Le README s'installe par `github:tivins/comfyui-client-ts#v<version>` et ne renvoie plus aux chemins et au serveur de la machine de travail. Code inchangé.
+
 ## 0.26.0 — 2026-11-14
 
 `MiniMaxH3Options.loras` applique des LoRA à la vidéo MiniMax H3, comme `Krea2Options.loras` : une liste `{ model, weight }` de `LoraLoaderModelOnly` enchaînés après la diffusion, et après la LoRA Turbo quand `turbo` est actif, qui alimentent le scheduler et le guider. Les LoRA doivent être entraînées pour MiniMax H3. `MINIMAX_H3_DEFAULTS.loras` vaut `[]` : sans LoRA, le graphe ne change pas. Demandé par llm-multi-ts.

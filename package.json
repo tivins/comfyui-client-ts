@@ -1,7 +1,12 @@
 {
   "name": "comfyui-client",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tivins/comfyui-client-ts.git"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

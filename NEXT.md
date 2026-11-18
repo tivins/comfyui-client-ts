@@ -1,7 +1,8 @@
-# Reprise — comfyui-client-ts (2026-11-14)
+# Reprise — comfyui-client-ts (2026-11-18)
 
 ## Où j'en suis
-- 0.26.0 (`MiniMaxH3Options.loras`, demandé par llm-multi-ts) commitée et taguée `v0.26.0`, pas poussée ; pas essayée sur le serveur.
+- 0.26.0 (`MiniMaxH3Options.loras`) pas essayée sur le serveur.
+- Publié sur GitHub (`tivins/comfyui-client-ts`, remote `github`) depuis 0.26.1 ; `origin` reste le VPS.
 - 0.25.0 (`generateMiniMaxH3Image`, ComfyUI ≥ 0.45) poussée avec les tags `v0.24.0`, `v0.24.1`, `v0.25.0`. Branchée dans llm-multi-ts 0.33.0 (`"model": "minimax-h3-image"`).
 - ComfyUI 0.45.3 (2026-11-13) : Krea 2, MiniMax H3 Image, H3 vidéo (481 s, inchangé) et Music 3 (60 s en 138 s) vérifiés ; Qwen, FLUX 3 Klein, SeedVR2 et l'interpolation pas encore. Essais dans `output/comfy-0.45/`.
 
@@ -22,4 +23,4 @@
 - MiniMax H3 vidéo : la diffusion int8 (`download_minimax_h3.sh int8`) n'est pas téléchargée ; à prendre pour comparer à la NVFP4 si besoin.
 - Un graphe identique au précédent est servi par le cache de ComfyUI : avec `deleteFromServer`, son fichier a déjà été effacé, et `runGraph` lève une erreur qui le dit. Changer la graine.
 - `KREA2_DEFAULTS` porte `loras` et `batchSize` : flow_editor a 2 tests en échec et une erreur de typage à cause de ça (noté dans son NEXT.md).
-- Publier une version : tag `v<version>` (léger) puis `git push origin master v<version>` ; `--follow-tags` ne pousse que les tags annotés. Les projets d'autres machines la prennent par `git+ssh://vps:/data/git/comfyui-client-ts#v<version>`.
+- Publier une version : tag annoté `v<version>`, puis `git push --follow-tags origin master` et `git push --follow-tags github master`. Ailleurs : `github:tivins/comfyui-client-ts#v<version>`.
