@@ -51,10 +51,13 @@ export type {Wan22Options} from "./models/wan22";
 
 export {
     MINIMAX_H3_DEFAULTS,
+    MINIMAX_H3_LAST_FRAME_PREFIX,
+    MINIMAX_H3_PREFIX,
     MiniMaxH3Model,
     buildMiniMaxH3Prompt,
     generateMiniMaxH3,
     minimaxH3FrameCount,
+    videoFirst,
 } from "./models/minimax-h3";
 export type {MiniMaxH3Options} from "./models/minimax-h3";
 

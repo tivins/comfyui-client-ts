@@ -358,6 +358,9 @@ const paths = await generateMiniMaxH3({
 | `turbo` | `false` | LoRA Turbo 8 pas v1.1 768p, 8 pas : `steps` est ignoré |
 | `loras` | `[]` | `LoraLoaderModelOnly` enchaînés après la diffusion (et après la LoRA Turbo avec `turbo`), `{ model, weight }` : LoRA entraînées pour MiniMax H3 seulement, fichiers de `models/loras/`. Avec la diffusion NVFP4, toute LoRA casse le mouvement, même à 0,01 (poids recompressés en 4 bits) ; pas essayé en int8 |
 | `unetName` | `MiniMaxH3Model.Nvfp4` | `UNETLoader` ; `MiniMaxH3Model.Int8` est celui du modèle de workflow |
+| `saveLastFrame` | `true` | `ImageFromBatch` (93, index -1) sur la sortie du VAE, puis `SaveImage` (94, préfixe `video/MiniMax_H3_last`) : la dernière image en PNG, sans la compression H.264 du mp4. C'est elle qu'il faut reprendre pour enchaîner une vidéo sur la fin de celle-ci. `false` : le graphe du modèle de workflow |
+
+`generateMiniMaxH3` renvoie la vidéo d'abord, puis le PNG de sa dernière image avec `saveLastFrame` (`videoFirst` trie les fichiers dans cet ordre).
 
 Mesures sur une RTX 5060 Ti 16 Go, diffusion NVFP4, même image et même graine, 5 s (124 images) :
 

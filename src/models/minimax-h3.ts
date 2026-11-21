@@ -30,6 +30,7 @@ export const MINIMAX_H3_DEFAULTS = {
     turbo: false,
     loras: [],
     unetName: MiniMaxH3Model.Nvfp4,
+    saveLastFrame: true,
 } as const satisfies Omit<MiniMaxH3Options, "inputImage" | "prompt">;
 
 export type MiniMaxH3Options = {
@@ -64,7 +65,18 @@ export type MiniMaxH3Options = {
     loras: LoRA[];
     /** Nom de fichier dans `models/diffusion_models/` ; voir `MiniMaxH3Model`. */
     unetName: string;
+    /**
+     * Enregistre aussi la dernière image décodée par le VAE en PNG (`ImageFromBatch` puis
+     * `SaveImage`), avant `CreateVideo` : sans la compression H.264 du mp4. C'est l'image à
+     * reprendre pour enchaîner une vidéo sur la fin de celle-ci. `generateMiniMaxH3` renvoie la
+     * vidéo d'abord, puis ce PNG.
+     */
+    saveLastFrame: boolean;
 };
+
+/** Préfixe des fichiers de la vidéo, et de sa dernière image avec `saveLastFrame`. */
+export const MINIMAX_H3_PREFIX = "video/MiniMax_H3";
+export const MINIMAX_H3_LAST_FRAME_PREFIX = "video/MiniMax_H3_last";
 
 /**
  * Nombre d'images pour `duration` secondes, comme l'expression du modèle de workflow :
@@ -87,7 +99,8 @@ export function minimaxH3FrameCount(duration: number): number {
  * `CreateVideo` à 24 images/s. Les interrupteurs Turbo du modèle sont résolus :
  * la LoRA (105:121) n'est dans le graphe qu'avec `turbo`. Les `loras` suivent,
  * en `LoraLoaderModelOnly` numérotés à partir de 130, et alimentent le
- * scheduler (105:9) et le guider (105:16).
+ * scheduler (105:9) et le guider (105:16). Avec `saveLastFrame`, `ImageFromBatch`
+ * (93, index -1) prend la dernière image du VAE et `SaveImage` (94) l'enregistre.
  *
  * `meta` s'ajoute au `_meta` de la première image (114).
  */
@@ -218,7 +231,7 @@ export function buildMiniMaxH3Prompt(options: MiniMaxH3Options, meta: Record<str
         "92": {
             inputs: {
                 video: ["105:91", 0],
-                filename_prefix: "video/MiniMax_H3",
+                filename_prefix: MINIMAX_H3_PREFIX,
                 format: "auto",
                 codec: "auto",
             },
@@ -257,14 +270,45 @@ export function buildMiniMaxH3Prompt(options: MiniMaxH3Options, meta: Record<str
         opts["105:104"]!.inputs.last_frame = ["117", 0];
     }
 
+    if (options.saveLastFrame) {
+        opts["93"] = {
+            inputs: {
+                image: ["105:10", 0],
+                batch_index: -1,
+                length: 1,
+            },
+            class_type: "ImageFromBatch",
+            _meta: {
+                title: "Dernière image",
+            },
+        };
+        opts["94"] = {
+            inputs: {
+                images: ["93", 0],
+                filename_prefix: MINIMAX_H3_LAST_FRAME_PREFIX,
+            },
+            class_type: "SaveImage",
+            _meta: {
+                title: "Enregistrer la dernière image",
+            },
+        };
+    }
+
     applyMeta(opts, "114", meta);
 
     return opts;
 }
 
+/** Les fichiers d'un rendu dans l'ordre de `generateMiniMaxH3` : les vidéos d'abord, puis les images (le PNG de fin). */
+export function videoFirst(paths: string[]): string[] {
+    const isImage = (path: string) => /\.(png|jpe?g|webp)$/i.test(path);
+    return [...paths.filter((path) => !isImage(path)), ...paths.filter(isImage)];
+}
+
 /**
  * Envoie la première image (et la dernière, s'il y en a une) au serveur, puis le graphe
- * MiniMax H3, attend la fin, et enregistre la vidéo avec son son.
+ * MiniMax H3, attend la fin, et enregistre la vidéo avec son son. Renvoie la vidéo d'abord,
+ * puis, avec `saveLastFrame`, le PNG de sa dernière image.
  * Ici, `inputImage` et `lastImage` sont des chemins locaux ; ils sont remplacés par les noms
  * que renvoie `uploadImage`.
  */
@@ -276,5 +320,5 @@ export async function generateMiniMaxH3(options: MiniMaxH3Options, settings: Gen
         lastImage = await uploadImage(options.lastImage, settings);
         settings.logger?.log(`[comfyui] dernière image envoyée`, lastImage);
     }
-    return runGraph(buildMiniMaxH3Prompt({...options, inputImage, lastImage}, settings.meta ?? null), settings);
+    return videoFirst(await runGraph(buildMiniMaxH3Prompt({...options, inputImage, lastImage}, settings.meta ?? null), settings));
 }

@@ -10,6 +10,7 @@ import {
   MiniMaxH3Model,
   minimaxH3FrameCount,
   type MiniMaxH3Options,
+  videoFirst,
 } from "./minimax-h3.ts";
 
 const options: MiniMaxH3Options = {
@@ -122,6 +123,23 @@ describe("buildMiniMaxH3Prompt", () => {
     expect(graph["105:104"]?.inputs.last_frame).toEqual(["117", 0]);
   });
 
+  test("saveLastFrame (par défaut) enregistre la dernière image du VAE en PNG, sans passer par la vidéo", () => {
+    const graph = buildMiniMaxH3Prompt(options);
+
+    expect(graph["93"]?.class_type).toBe("ImageFromBatch");
+    expect(graph["93"]?.inputs).toEqual({ image: ["105:10", 0], batch_index: -1, length: 1 });
+    expect(graph["94"]?.class_type).toBe("SaveImage");
+    expect(graph["94"]?.inputs).toEqual({ images: ["93", 0], filename_prefix: "video/MiniMax_H3_last" });
+    expect(graph["92"]?.inputs.filename_prefix).toBe("video/MiniMax_H3");
+  });
+
+  test("sans saveLastFrame, le graphe du modèle de workflow", () => {
+    const graph = buildMiniMaxH3Prompt({ ...options, saveLastFrame: false });
+
+    expect(graph["93"]).toBeUndefined();
+    expect(graph["94"]).toBeUndefined();
+  });
+
   test("ajoute meta au _meta de la première image", () => {
     expect(buildMiniMaxH3Prompt(options)["114"]?._meta).toEqual({ title: "Charger Image" });
     expect(buildMiniMaxH3Prompt(options, { run: "a" })["114"]?._meta).toEqual({ title: "Charger Image", run: "a" });
@@ -156,6 +174,7 @@ describe("generateMiniMaxH3", () => {
           abc: {
             status: { completed: true, status_str: "success" },
             outputs: {
+              "94": { images: [{ filename: "clip_last.png", subfolder: "video", type: "output" }] },
               "92": { images: [{ filename: "clip.mp4", subfolder: "video", type: "output" }] },
             },
           },
@@ -179,7 +198,17 @@ describe("generateMiniMaxH3", () => {
     expect(graph.prompt["114"]?.inputs.image).toBe("start (1).png");
     expect(graph.prompt["117"]?.inputs.image).toBe("end.png");
     expect(graph.prompt["114"]?._meta.run).toBe("a");
+    expect(paths).toHaveLength(2);
     expect(paths[0]).toEndWith("-clip.mp4");
+    expect(paths[1]).toEndWith("-clip_last.png");
     expect(await Bun.file(paths[0]!).bytes()).toEqual(new Uint8Array([4, 5]));
+  });
+});
+
+describe("videoFirst", () => {
+  test("met les vidéos avant les images, dans leur ordre", () => {
+    expect(videoFirst(["a_last.png", "a.mp4"])).toEqual(["a.mp4", "a_last.png"]);
+    expect(videoFirst(["a.mp4", "b.webm", "c.PNG"])).toEqual(["a.mp4", "b.webm", "c.PNG"]);
+    expect(videoFirst([])).toEqual([]);
   });
 });

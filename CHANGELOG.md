@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.0 — 2026-11-21
+
+`MiniMaxH3Options.saveLastFrame` enregistre aussi la dernière image de la vidéo MiniMax H3 en PNG : `ImageFromBatch` (nœud 93, `batch_index: -1`) la prend à la sortie du VAE vidéo, avant `CreateVideo`, et `SaveImage` (94) l'écrit avec le préfixe `video/MiniMax_H3_last` (`MINIMAX_H3_LAST_FRAME_PREFIX`). Elle échappe à la compression H.264 du mp4, qui s'ajoutait à chaque vidéo enchaînée sur la fin de la précédente. Actif par défaut (`MINIMAX_H3_DEFAULTS.saveLastFrame`). `generateMiniMaxH3` renvoie toujours la vidéo d'abord, puis le PNG (`videoFirst`, exporté) : un appelant qui prend le premier fichier reçoit la vidéo comme avant. `false` redonne le graphe du modèle de workflow. Demandé par llm-multi-ts-ui (suites de vidéos qui se dégradent).
+
 ## 0.26.1 — 2026-11-18
 
 Publication sur GitHub (`github:tivins/comfyui-client-ts`) sous licence MIT (`LICENSE`, champ `license` du `package.json`). Le README s'installe par `github:tivins/comfyui-client-ts#v<version>` et ne renvoie plus aux chemins et au serveur de la machine de travail. Code inchangé.
