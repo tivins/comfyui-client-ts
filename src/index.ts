@@ -22,7 +22,7 @@ export {
     Scheduler,
     SCHEDULER_NAMES,
 } from "./workflow";
-export type {NodeRef, ApiInput, ApiNode, ApiPrompt, LoRA} from "./workflow";
+export type {NodeRef, ApiInput, ApiListValue, ApiNode, ApiPrompt, LoRA} from "./workflow";
 
 export {QWEN_IMAGE_DEFAULTS, buildQwenImagePrompt, generateQwenImage} from "./models/qwen-image";
 export type {QwenImageOptions} from "./models/qwen-image";
@@ -45,6 +45,15 @@ export {
     generateFlux3Klein,
 } from "./models/flux3-klein";
 export type {Flux3KleinOptions} from "./models/flux3-klein";
+
+export {
+    MOSS_IMAGE_DEFAULTS,
+    MOSS_IMAGE_PREFIX,
+    MossBoxKind,
+    buildMossImagePrompt,
+    generateMossImage,
+} from "./models/moss-image";
+export type {MossBox, MossImageOptions, MossSkipLayerGuidance} from "./models/moss-image";
 
 export {WAN22_DEFAULTS, buildWan22Prompt, generateWan22} from "./models/wan22";
 export type {Wan22Options} from "./models/wan22";

@@ -1,6 +1,6 @@
 # comfyui-client
 
-Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, FLUX 3 Image Klein, MiniMax H3 Image, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
+Client Bun qui envoie des graphes API (Qwen Image 2.1, Krea 2, FLUX 3 Image Klein, MiniMax H3 Image, MOSS-Image, Wan 2.2, MiniMax H3, MiniMax Music 3, SeedVR2) à un serveur ComfyUI, attend la fin du prompt, et enregistre les fichiers produits en local.
 
 | Fichier | Contenu |
 | --- | --- |
@@ -32,7 +32,7 @@ Par git, figé sur une version (un tag `v<version>` par version publiée dans le
 ```json
 {
   "dependencies": {
-    "comfyui-client": "github:tivins/comfyui-client-ts#v0.26.1"
+    "comfyui-client": "github:tivins/comfyui-client-ts#v0.28.0"
   }
 }
 ```
@@ -305,6 +305,44 @@ Le modèle est réglé pour 2048² (4 Mpx), rend mal en dessous et va jusqu'à ~
 Fichiers côté serveur (script `download_minimax_h3_image.sh` du dépôt comfyui) : UNET `minimax_h3_image_pruned_w4a8.safetensors` (12,5 Go, `MiniMaxH3ImageModel.W4a8`), CLIP `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` (celui de MiniMax H3 vidéo), VAE `minimax_h3_image_vae_fp16.safetensors`. Les modèles de workflow prennent l'int8 (`MiniMaxH3ImageModel.Int8`, 21 Go, `download_minimax_h3_image.sh int8`). Demande ComfyUI 0.45.0 ou plus. Licence MiniMax propre au modèle : autorisation à demander au-delà de 1 M$ de revenu annuel ou pour un service hébergé ouvert à des tiers. Le préfixe des fichiers enregistrés est `MiniMaxH3Image`.
 
 Sur une RTX 5060 Ti, modèles froids : 27 s pour 2048² sans image (15,5 Go de VRAM), 34 s pour une édition en 1024 × 1568.
+
+## MOSS-Image (placement par boîtes)
+
+`buildMossImagePrompt` reprend les modèles de workflow « MOSS-Image » de ComfyUI (`image_moss_image_t2i`, `image_moss_image_t2i_bboxes`), sans le prompt upsampler : il réécrit le prompt et perd la mise en page. MOSS-Image (OpenMOSS, 5B, Apache-2.0) écrit les textes exactement (accents, €, petites lignes) et sait **placer chaque élément dans une boîte** : objets, personnages et textes, au pixel près, en comptant juste (trois boîtes de citron donnent trois citrons). Sans boîte, il reste un bon modèle de portrait et d'affiche.
+
+```ts
+import { generateMossImage, MOSS_IMAGE_DEFAULTS, MossBoxKind } from "comfyui-client";
+
+const paths = await generateMossImage({
+  ...MOSS_IMAGE_DEFAULTS,
+  prompt: "Photograph of a sunny Parisian café terrace: a young woman on the left and an old man on the right",
+  negativePrompt: "nsfw, worst quality, bad anatomy, watermark, jpeg artifact",
+  boxes: [
+    { x: 48, y: 224, width: 384, height: 800, kind: MossBoxKind.Character, description: "A young woman with short red hair in a green coat" },
+    { x: 624, y: 288, width: 368, height: 736, kind: MossBoxKind.Character, description: "An old man in a brown tweed jacket and flat cap" },
+    { x: 288, y: 32, width: 448, height: 128, kind: MossBoxKind.Text, text: "Café des Amis", description: "A painted shop sign with white serif letters on dark green" },
+  ],
+});
+```
+
+| Champ | Défaut | Nœud |
+| --- | --- | --- |
+| `boxes` | `[]` | `CreateBoundingBoxes` (liste emballée dans `__value__`) puis `MOSSImageLayoutPrompt`, dont le prompt JSON remplace le texte du `CLIPTextEncode`. Vide : le prompt va tel quel à l'encodeur |
+| `boxes[].x`, `y`, `width`, `height` | — | pixels de l'image, origine en haut à gauche |
+| `boxes[].kind` | — | `object`, `character` (numéro passé à `character_boxes`) ou `text` |
+| `boxes[].text` | — | texte à écrire, retours à la ligne compris ; obligatoire pour `text` |
+| `boxes[].description` | — | ce qui va dans la boîte ; pour un texte, son style (le texte n'y est pas répété) |
+| `width` × `height` | 1024 × 1024 | `EmptyFlux2LatentImage`, multiples de 16 ; le modèle vise 1 à 2 Mpx |
+| `steps`, `cfg` | 25, 2.5 | `KSampler` |
+| `seed`, `samplerName`, `scheduler` | 42, er_sde, simple | `KSampler` |
+| `skipLayerGuidance` | couche 22, de 0 à 0,5 | `SkipLayerGuidanceDiTSimple` ; `null` le retire |
+| `unetName`, `clipName`, `vaeName` | fichiers ci-dessous | loaders ; CLIP chargé en type `moss_image` |
+
+La description globale (`prompt`) reste utile avec des boîtes : elle donne la scène, la lumière et le style. `bun run example:moss` (ou `bun src/example-moss.ts table`) génère une affiche, une nature morte et deux personnages ; prompts et boîtes sont dans `src/example-moss.json`.
+
+Fichiers côté serveur (script `download_moss_image.sh` du dépôt comfyui) : UNET `moss_image_sft_bf16.safetensors`, CLIP `qwen3.5_9b_int8_convrot.safetensors`, VAE `flux2-vae.safetensors`. Demande ComfyUI 0.46.0 ou plus (nœuds natifs). Le préfixe des fichiers enregistrés est `MossImage`.
+
+Sur une RTX 5060 Ti : 62 à 76 s par image en 1024² ou 896 × 1152, avec ou sans boîtes (Krea 2 : ~50 s).
 
 ## Wan 2.2 image → vidéo
 

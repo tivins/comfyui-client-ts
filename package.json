@@ -1,6 +1,6 @@
 {
   "name": "comfyui-client",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "private": true,
   "license": "MIT",
   "repository": {
@@ -15,6 +15,7 @@
     "generate": "bun src/generate.ts",
     "example": "bun src/example.ts",
     "example:music": "bun src/example-music.ts",
+    "example:moss": "bun src/example-moss.ts",
     "batch-music": "bun src/batch-music.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"

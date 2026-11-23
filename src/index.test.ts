@@ -8,6 +8,8 @@ import {
   MINIMAX_H3_DEFAULTS,
   MINIMAX_H3_IMAGE_DEFAULTS,
   MINIMAX_MUSIC3_DEFAULTS,
+  MOSS_IMAGE_DEFAULTS,
+  MossBoxKind,
   QWEN_IMAGE_DEFAULTS,
   SEEDVR2_DEFAULTS,
   SEEDVR2_VIDEO_DEFAULTS,
@@ -17,12 +19,14 @@ import {
   buildMiniMaxH3ImagePrompt,
   buildMiniMaxH3Prompt,
   buildMiniMaxMusic3Prompt,
+  buildMossImagePrompt,
   buildWan22Prompt,
   generateFrameInterpolation,
   generateKrea2,
   generateMiniMaxH3,
   generateMiniMaxH3Image,
   generateMiniMaxMusic3,
+  generateMossImage,
   generateSeedVR2Upscale,
   generateSeedVR2VideoUpscale,
   generateWan22,
@@ -67,6 +71,10 @@ test("l'entrée du paquet expose l'API publique", () => {
   expect(MINIMAX_MUSIC3_DEFAULTS.steps).toBe(30);
   expect(typeof buildMiniMaxMusic3Prompt).toBe("function");
   expect(typeof generateMiniMaxMusic3).toBe("function");
+  expect(MOSS_IMAGE_DEFAULTS.steps).toBe(25);
+  expect(MossBoxKind.Character).toBe("character");
+  expect(typeof buildMossImagePrompt).toBe("function");
+  expect(typeof generateMossImage).toBe("function");
   expect(() => silentLogger.log("rien")).not.toThrow();
 });
 

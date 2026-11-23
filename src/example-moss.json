@@ -1,0 +1,120 @@
+{
+  "negativePrompt": "nsfw, worst quality, bad anatomy, watermark, jpeg artifact",
+  "images": [
+    {
+      "name": "affiche",
+      "width": 896,
+      "height": 1152,
+      "prompt": "Minimalist concert poster, deep blue background, huge white condensed title at the top, a small orange moon on the right, a block of small white text at the bottom left",
+      "boxes": [
+        {
+          "x": 32,
+          "y": 48,
+          "width": 832,
+          "height": 288,
+          "kind": "text",
+          "text": "NUIT BLANCHE",
+          "description": "Huge white condensed sans-serif capitals spell across the top of the poster, flat and sharply defined against the deep blue background"
+        },
+        {
+          "x": 560,
+          "y": 448,
+          "width": 256,
+          "height": 256,
+          "kind": "object",
+          "description": "A small glowing orange full moon with faint craters"
+        },
+        {
+          "x": 64,
+          "y": 912,
+          "width": 432,
+          "height": 176,
+          "kind": "text",
+          "text": "23.11.2026\nLa Cigale — Paris\nEntrée libre",
+          "description": "Three left-aligned lines of small white sans-serif type with tight line spacing"
+        }
+      ]
+    },
+    {
+      "name": "table",
+      "width": 1024,
+      "height": 1024,
+      "prompt": "Still life photograph on a wooden kitchen table: a red fox figurine, a blue enamel teapot and exactly three yellow lemons, top light from a window",
+      "boxes": [
+        {
+          "x": 32,
+          "y": 400,
+          "width": 256,
+          "height": 416,
+          "kind": "object",
+          "description": "A red ceramic fox figurine sitting upright"
+        },
+        {
+          "x": 704,
+          "y": 368,
+          "width": 288,
+          "height": 448,
+          "kind": "object",
+          "description": "A blue enamel teapot with a black knob on its lid"
+        },
+        {
+          "x": 336,
+          "y": 720,
+          "width": 144,
+          "height": 128,
+          "kind": "object",
+          "description": "One yellow lemon lying on the table"
+        },
+        {
+          "x": 480,
+          "y": 576,
+          "width": 144,
+          "height": 128,
+          "kind": "object",
+          "description": "One yellow lemon lying on the table"
+        },
+        {
+          "x": 560,
+          "y": 784,
+          "width": 144,
+          "height": 128,
+          "kind": "object",
+          "description": "One yellow lemon lying on the table"
+        }
+      ]
+    },
+    {
+      "name": "duo",
+      "width": 1024,
+      "height": 1024,
+      "prompt": "Photograph of a sunny Parisian café terrace: a young woman on the left and an old man on the right, a painted sign above them",
+      "boxes": [
+        {
+          "x": 48,
+          "y": 224,
+          "width": 384,
+          "height": 800,
+          "kind": "character",
+          "description": "A young woman with short red hair in a green coat, standing, smiling, holding a coffee cup"
+        },
+        {
+          "x": 624,
+          "y": 288,
+          "width": 368,
+          "height": 736,
+          "kind": "character",
+          "description": "An old man with a grey moustache in a brown tweed jacket and flat cap, seated at a small round table"
+        },
+        {
+          "x": 288,
+          "y": 32,
+          "width": 448,
+          "height": 128,
+          "kind": "text",
+          "text": "Café des Amis",
+          "description": "A painted shop sign with white serif letters on dark green"
+        }
+      ]
+    }
+  ]
+}

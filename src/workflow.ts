@@ -1,7 +1,13 @@
 /** Lien vers la sortie `slot` d'un nœud du graphe API. */
 export type NodeRef = [string, number];
 
-export type ApiInput = string | number | boolean | NodeRef;
+/**
+ * Valeur de liste d'un widget (boîtes de `CreateBoundingBoxes`…). Envoyée nue, ComfyUI
+ * prendrait la liste pour un lien `[nœud, sortie]` ; l'interface l'emballe aussi ainsi.
+ */
+export type ApiListValue = {__value__: unknown[]};
+
+export type ApiInput = string | number | boolean | NodeRef | ApiListValue;
 
 export type ApiNode = {
   class_type: string;
