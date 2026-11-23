@@ -11,7 +11,7 @@
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
 ## Prochaines étapes
-- 0.29.0 (int8 par défaut pour MiniMax H3) commitée, pas poussée. À essayer : une LoRA en int8 (casse le mouvement en NVFP4) ; int8 Turbo comme brouillon de l'int8 complet, sur 2–3 autres images.
+- MiniMax H3 (int8 par défaut depuis 0.29.0), à essayer : une LoRA en int8 (casse le mouvement en NVFP4) ; int8 Turbo comme brouillon de l'int8 complet, sur 2–3 autres images.
 - `TODO.md` : lire les métadonnées mp4 via le graphe d'API (un vieux mp4 de `ComfyUI/input` les porte dans le tag `comment`, format VideoHelperSuite).
   - Attendu aussi par diffusion_explorer (2026-10-21) : son `bun scan` indexe les vidéos sans provenance tant que ce lecteur manque.
 - Peut-être une fonction `generateKrea2Inpaint` si la retouche locale finit par marcher (pour l'instant, non).
