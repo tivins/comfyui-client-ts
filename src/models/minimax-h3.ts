@@ -7,9 +7,15 @@ import {applyMeta, chainLoras, type ApiInput, type ApiPrompt, type LoRA} from ".
  * téléchargées par `download_minimax_h3.sh` du dépôt comfyui.
  */
 export const MiniMaxH3Model = {
-    /** NVFP4 élaguée de lilcheaty (12,5 Go) : tient dans 16 Go, demande une carte Blackwell. */
+    /**
+     * NVFP4 élaguée de lilcheaty (12,5 Go, dépôt communautaire) : tient dans 16 Go, demande une
+     * carte Blackwell. Lisse les détails avec Turbo et casse le mouvement avec toute LoRA.
+     */
     Nvfp4: "minimax_h3_fl2va_pruned_nvfp4.safetensors",
-    /** int8 élaguée de Comfy-Org (21 Go), celle du modèle de workflow (`download_minimax_h3.sh int8`). */
+    /**
+     * int8 élaguée de Comfy-Org (21 Go), celle du modèle de workflow (`download_minimax_h3.sh int8`).
+     * Par défaut : déborde en RAM sur 16 Go, mais seulement 4 à 10 % plus lente que la NVFP4.
+     */
     Int8: "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
 } as const;
 export type MiniMaxH3Model = (typeof MiniMaxH3Model)[keyof typeof MiniMaxH3Model];
@@ -29,7 +35,7 @@ export const MINIMAX_H3_DEFAULTS = {
     steps: 20,
     turbo: false,
     loras: [],
-    unetName: MiniMaxH3Model.Nvfp4,
+    unetName: MiniMaxH3Model.Int8,
     saveLastFrame: true,
 } as const satisfies Omit<MiniMaxH3Options, "inputImage" | "prompt">;
 
@@ -53,9 +59,8 @@ export type MiniMaxH3Options = {
     /** Pas sans `turbo`. */
     steps: number;
     /**
-     * LoRA Turbo 8 pas v1.1 768p : 8 pas, `steps` est alors ignoré. Plus de deux fois plus rapide,
-     * mais les détails fins (fils de laine, yeux) se brouillent au fil de la vidéo, avec la
-     * diffusion NVFP4 du moins.
+     * LoRA Turbo 8 pas v1.1 768p : 8 pas, `steps` est alors ignoré. Plus de deux fois plus rapide.
+     * Avec l'int8, les détails restent nets ; avec la NVFP4, ils se brouillent au fil de la vidéo.
      */
     turbo: boolean;
     /**

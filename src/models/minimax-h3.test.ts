@@ -61,10 +61,10 @@ describe("buildMiniMaxH3Prompt", () => {
     expect(graph["105:15"]?.inputs.noise_seed).toBe(7);
   });
 
-  test("les défauts : NVFP4, 20 pas sans LoRA, res_multistep / simple, son relié à la vidéo", () => {
+  test("les défauts : int8, 20 pas sans LoRA, res_multistep / simple, son relié à la vidéo", () => {
     const graph = buildMiniMaxH3Prompt(options);
 
-    expect(graph["105:6"]?.inputs.unet_name).toBe(MiniMaxH3Model.Nvfp4);
+    expect(graph["105:6"]?.inputs.unet_name).toBe(MiniMaxH3Model.Int8);
     expect(graph["105:121"]).toBeUndefined();
     expect(graph["105:9"]?.inputs.steps).toBe(20);
     expect(graph["105:9"]?.inputs.model).toEqual(["105:6", 0]);

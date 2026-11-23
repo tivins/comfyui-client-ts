@@ -394,8 +394,8 @@ const paths = await generateMiniMaxH3({
 | `duration` | 5 | `round(duration × 24)` images, arrondi au-dessus à 17k + 5 : 5 s → 124 images (`minimaxH3FrameCount`) |
 | `steps` | 20 | `BasicScheduler` (sans `turbo`) |
 | `turbo` | `false` | LoRA Turbo 8 pas v1.1 768p, 8 pas : `steps` est ignoré |
-| `loras` | `[]` | `LoraLoaderModelOnly` enchaînés après la diffusion (et après la LoRA Turbo avec `turbo`), `{ model, weight }` : LoRA entraînées pour MiniMax H3 seulement, fichiers de `models/loras/`. Avec la diffusion NVFP4, toute LoRA casse le mouvement, même à 0,01 (poids recompressés en 4 bits) ; pas essayé en int8 |
-| `unetName` | `MiniMaxH3Model.Nvfp4` | `UNETLoader` ; `MiniMaxH3Model.Int8` est celui du modèle de workflow |
+| `loras` | `[]` | `LoraLoaderModelOnly` enchaînés après la diffusion (et après la LoRA Turbo avec `turbo`), `{ model, weight }` : LoRA entraînées pour MiniMax H3 seulement, fichiers de `models/loras/`. Avec la diffusion NVFP4, toute LoRA casse le mouvement, même à 0,01 (poids recompressés en 4 bits) ; pas encore essayé en int8 |
+| `unetName` | `MiniMaxH3Model.Int8` | `UNETLoader` ; celui du modèle de workflow. `MiniMaxH3Model.Nvfp4` (communautaire, Blackwell) lisse les détails avec `turbo` |
 | `saveLastFrame` | `true` | `ImageFromBatch` (93, index -1) sur la sortie du VAE, puis `SaveImage` (94, préfixe `video/MiniMax_H3_last`) : la dernière image en PNG, sans la compression H.264 du mp4. C'est elle qu'il faut reprendre pour enchaîner une vidéo sur la fin de celle-ci. `false` : le graphe du modèle de workflow |
 
 `generateMiniMaxH3` renvoie la vidéo d'abord, puis le PNG de sa dernière image avec `saveLastFrame` (`videoFirst` trie les fichiers dans cet ordre).
@@ -410,9 +410,18 @@ Mesures sur une RTX 5060 Ti 16 Go, diffusion NVFP4, même image et même graine,
 | 768 × 768 | Turbo v1.0, 8 pas | 216 s | détails brouillés |
 | 768 × 768 | Turbo v1.1 768p, 8 pas | 213 s | détails brouillés |
 
-Avec le Turbo, les détails fins (fils d'une pelote de laine, yeux, pelage) se brouillent au fil de la vidéo ; c'est pourquoi il est éteint par défaut. Il n'a pas été essayé avec la diffusion int8. VRAM au plus 15,8 Go, RAM 10,9 Go, sans swap ; ComfyUI charge les modèles en VRAM dynamique et déborde en RAM si besoin. La première génération compte ~30 s de chargement. Sous 384p, le modèle échoue.
+Avec le Turbo, les détails fins (fils d'une pelote de laine, yeux, pelage) se brouillent au fil de la vidéo en NVFP4.
 
-Fichiers côté serveur, téléchargés par `download_minimax_h3.sh` du dépôt comfyui : diffusion `minimax_h3_fl2va_pruned_nvfp4.safetensors` (NVFP4, demande une carte Blackwell ; `download_minimax_h3.sh int8` ajoute `minimax_h3_fl2va_pruned_int8_convrot.safetensors`), CLIP `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`, VAE `minimax_h3_video_vae_int8_convrot.safetensors` et `minimax_h3_audio_vae_fp32.safetensors`, LoRA `minimax_h3_fl2v_turbo_8step_v1.1_768p_comfyui_bf16.safetensors` (pour `turbo`). ComfyUI 0.30.0 ou plus. Licence MiniMax H3 Community License : usage commercial permis, avec « MiniMax H3 » affiché dans l'interface du produit.
+NVFP4 contre int8, 512 × 768, 5 s, même image et même graine (2026-11-23) :
+
+| Diffusion | 20 pas | Turbo v1.1 768p |
+| --- | --- | --- |
+| NVFP4 | 273 s | 116 s, pelage lissé, moustaches perdues |
+| int8 | 284 s | 128 s, détails gardés |
+
+L'int8 est donc la diffusion par défaut depuis 0.29.0. À graine égale, les deux suivent le même mouvement pendant ~2 s, puis divergent : une vidéo NVFP4 ne sert pas de brouillon à une vidéo int8. VRAM au plus 15,8 Go, RAM 10,9 Go, sans swap ; ComfyUI charge les modèles en VRAM dynamique et déborde en RAM si besoin. La première génération compte ~30 s de chargement. Sous 384p, le modèle échoue.
+
+Fichiers côté serveur, téléchargés par `download_minimax_h3.sh int8` du dépôt comfyui : diffusion `minimax_h3_fl2va_pruned_int8_convrot.safetensors` (int8 de Comfy-Org, par défaut ; le script prend aussi la NVFP4 `minimax_h3_fl2va_pruned_nvfp4.safetensors` de lilcheaty, qui demande une carte Blackwell), CLIP `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`, VAE `minimax_h3_video_vae_int8_convrot.safetensors` et `minimax_h3_audio_vae_fp32.safetensors`, LoRA `minimax_h3_fl2v_turbo_8step_v1.1_768p_comfyui_bf16.safetensors` (pour `turbo`). ComfyUI 0.30.0 ou plus. Licence MiniMax H3 Community License : usage commercial permis, avec « MiniMax H3 » affiché dans l'interface du produit.
 
 ## MiniMax Music 3
 

@@ -11,6 +11,7 @@
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
 ## Prochaines étapes
+- 0.29.0 (int8 par défaut pour MiniMax H3) commitée, pas poussée. À essayer : une LoRA en int8 (casse le mouvement en NVFP4) ; int8 Turbo comme brouillon de l'int8 complet, sur 2–3 autres images.
 - `TODO.md` : lire les métadonnées mp4 via le graphe d'API (un vieux mp4 de `ComfyUI/input` les porte dans le tag `comment`, format VideoHelperSuite).
   - Attendu aussi par diffusion_explorer (2026-10-21) : son `bun scan` indexe les vidéos sans provenance tant que ce lecteur manque.
 - Peut-être une fonction `generateKrea2Inpaint` si la retouche locale finit par marcher (pour l'instant, non).
@@ -20,7 +21,7 @@
 
 ## Rappels
 - Les fichiers générés sont dans `output/` (ignoré par git) ; ils s'écoutent avec la page de `/data/media/localGeneration`.
-- MiniMax H3 vidéo : la diffusion int8 (`download_minimax_h3.sh int8`) n'est pas téléchargée ; à prendre pour comparer à la NVFP4 si besoin.
+- MiniMax H3 vidéo : la NVFP4 vient d'un dépôt communautaire (`lilcheaty/MiniMax-H3-NVFP4`) ; l'encodeur, les VAE et l'int8 de Comfy-Org (téléchargée sur forge) sont officiels.
 - Un graphe identique au précédent est servi par le cache de ComfyUI : avec `deleteFromServer`, son fichier a déjà été effacé, et `runGraph` lève une erreur qui le dit. Changer la graine.
 - `KREA2_DEFAULTS` porte `loras` et `batchSize` : flow_editor a 2 tests en échec et une erreur de typage à cause de ça (noté dans son NEXT.md).
 - Publier une version : tag annoté `v<version>`, puis `git push --follow-tags origin master` et `git push --follow-tags github master`. Ailleurs : `github:tivins/comfyui-client-ts#v<version>`.
