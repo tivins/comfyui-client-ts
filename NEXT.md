@@ -1,7 +1,7 @@
 # Reprise — comfyui-client-ts (2026-11-23)
 
 ## Où j'en suis
-- 0.28.0 (`generateMossImage`, boîtes) commitée et taguée, pas poussée. Pas encore branchée dans llm-multi-ts.
+- 0.28.0 (`generateMossImage`, boîtes) poussée sur origin et github avec `v0.28.0`. Pas encore branchée dans llm-multi-ts.
 - 0.26.0 (`MiniMaxH3Options.loras`) pas essayée sur le serveur.
 - Publié sur GitHub (`tivins/comfyui-client-ts`, remote `github`) depuis 0.26.1 ; `origin` reste le VPS.
 - 0.25.0 (`generateMiniMaxH3Image`, ComfyUI ≥ 0.45) poussée avec les tags `v0.24.0`, `v0.24.1`, `v0.25.0`. Branchée dans llm-multi-ts 0.33.0 (`"model": "minimax-h3-image"`).
