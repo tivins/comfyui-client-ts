@@ -34,8 +34,10 @@ export type GenerateSettings = {
     outputDir?: string;
     /**
      * Après téléchargement, efface les fichiers du dossier `output` du serveur, puis retire le
-     * prompt de l'historique et de la file. L'effacement passe par le custom node
-     * `comfyui-delete-output` ; sans lui, les fichiers restent et `logger.warn` le signale.
+     * prompt de l'historique et de la file. Les fonctions `generate*` effacent aussi du dossier
+     * `input` les images qu'elles ont envoyées, même si la génération échoue (`runGraphWithUploads`).
+     * L'effacement passe par le custom node `comfyui-delete-output` ; sans lui, les fichiers
+     * restent et `logger.warn` le signale.
      */
     deleteFromServer?: boolean;
     /** Suivi de la génération. Par défaut, rien n'est affiché. `console` convient. */
@@ -175,24 +177,22 @@ async function postDelete(base: string, path: "history" | "queue", promptId: str
 }
 
 /**
- * Efface les fichiers `type: "output"` par `POST /api/output/delete` (custom node
- * `comfyui-delete-output`). Les fichiers `temp` sont laissés : ComfyUI vide ce dossier au
- * démarrage. Sans la route, ComfyUI répond 404 ou 405 : les fichiers restent, avec un
- * avertissement.
+ * Efface des fichiers des dossiers `output` ou `input` par `POST /api/output/delete` (custom
+ * node `comfyui-delete-output`). Sans la route, ComfyUI répond 404 ou 405 : les fichiers
+ * restent, avec un avertissement.
  */
-async function deleteOutputFiles(base: string, files: HistoryFile[], logger: Logger): Promise<void> {
-    const outputs = files.filter((file) => file.type === "output");
-    if (outputs.length === 0) {
+async function deleteServerFiles(base: string, kept: HistoryFile[], logger: Logger): Promise<void> {
+    if (kept.length === 0) {
         return;
     }
     const response = await fetch(`${base}/api/output/delete`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({files: outputs}),
+        body: JSON.stringify({files: kept}),
     });
     if (response.status === 404 || response.status === 405) {
         logger.warn(
-            `[comfyui] POST /api/output/delete absent (${response.status}) : fichiers laissés dans output/. ` +
+            `[comfyui] POST /api/output/delete absent (${response.status}) : fichiers laissés sur le serveur. ` +
             `Custom node comfyui-delete-output installé, ComfyUI redémarré ?`,
         );
         return;
@@ -202,8 +202,25 @@ async function deleteOutputFiles(base: string, files: HistoryFile[], logger: Log
     }
 }
 
+/**
+ * Efface du dossier `input` du serveur des fichiers envoyés par `uploadImage`, désignés par le
+ * nom qu'il a renvoyé (`sous-dossier/nom` ou `nom`). Un fichier déjà absent n'est pas une erreur.
+ * Demande le custom node `comfyui-delete-output` (≥ la version qui accepte `type: "input"`).
+ */
+export async function deleteUploads(names: string[], settings: GenerateSettings = {}): Promise<void> {
+    const files = names.map((name) => {
+        const slash = name.lastIndexOf("/");
+        return slash < 0
+            ? {filename: name, subfolder: "", type: "input"}
+            : {filename: name.slice(slash + 1), subfolder: name.slice(0, slash), type: "input"};
+    });
+    await deleteServerFiles(serverBase(settings), files, settings.logger ?? silentLogger);
+}
+
 async function deleteFromServer(base: string, promptId: string, files: HistoryFile[], logger: Logger): Promise<void> {
-    await deleteOutputFiles(base, files, logger);
+    // Seulement les fichiers produits : `temp` est vidé par ComfyUI au démarrage, et un fichier
+    // `input` de l'historique (aperçu de `LoadVideo`) est une source qui n'est pas à nous.
+    await deleteServerFiles(base, files.filter((file) => file.type === "output"), logger);
     await postDelete(base, "history", promptId);
     await postDelete(base, "queue", promptId);
 }

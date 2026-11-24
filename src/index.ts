@@ -1,4 +1,4 @@
-export {DEFAULT_SERVER, clearHistory, runGraph} from "./client";
+export {DEFAULT_SERVER, clearHistory, deleteUploads, runGraph} from "./client";
 export type {GenerateSettings} from "./client";
 
 export type {GenerationProgress} from "./progress";
@@ -6,7 +6,7 @@ export type {GenerationProgress} from "./progress";
 export {silentLogger} from "./logger";
 export type {Logger} from "./logger";
 
-export {uploadImage} from "./upload";
+export {runGraphWithUploads, uploadImage} from "./upload";
 
 export {readPngMetadata, readPngMetadataFile} from "./png-metadata";
 export type {PngMetadata} from "./png-metadata";

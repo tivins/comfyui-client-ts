@@ -1,5 +1,5 @@
-import {runGraph, type GenerateSettings} from "../client";
-import {uploadImage} from "../upload";
+import {type GenerateSettings} from "../client";
+import {runGraphWithUploads} from "../upload";
 import {applyMeta, Sampler, Scheduler, type ApiInput, type ApiNode, type ApiPrompt} from "../workflow";
 
 /** `MiniMaxH3ImageConditioning` accepte au plus 100 images. */
@@ -158,12 +158,6 @@ export function buildMiniMaxH3ImagePrompt(options: MiniMaxH3ImageOptions, meta: 
  */
 export async function generateMiniMaxH3Image(options: MiniMaxH3ImageOptions, settings: GenerateSettings = {}): Promise<string[]> {
     checkReferences(options.referenceImages.length);
-    const referenceImages: string[] = [];
-    for (const path of options.referenceImages) {
-        referenceImages.push(await uploadImage(path, settings));
-    }
-    if (referenceImages.length > 0) {
-        settings.logger?.log(`[comfyui] images envoyées`, referenceImages.join(", "));
-    }
-    return runGraph(buildMiniMaxH3ImagePrompt({...options, referenceImages}, settings.meta ?? null), settings);
+    return runGraphWithUploads(options.referenceImages, settings,
+        (referenceImages) => buildMiniMaxH3ImagePrompt({...options, referenceImages}, settings.meta ?? null));
 }

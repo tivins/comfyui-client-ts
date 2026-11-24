@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { uploadImage } from "./upload.ts";
+import { runGraphWithUploads, uploadImage } from "./upload.ts";
 
 const originalFetch = globalThis.fetch;
 const directories: string[] = [];
@@ -58,5 +58,89 @@ describe("uploadImage", () => {
     globalThis.fetch = (async (_input) => new Response(null, { status: 400 })) as typeof fetch;
 
     expect(uploadImage(path, { server: "http://127.0.0.1:9" })).rejects.toThrow("/upload/image a répondu 400");
+  });
+});
+
+describe("uploadImage avec deleteFromServer", () => {
+  test("préfixe le nom envoyé d'un identifiant unique", async () => {
+    const path = await imageFile();
+    const names: string[] = [];
+    globalThis.fetch = (async (_input, init) => {
+      const image = (init?.body as FormData).get("image") as File;
+      names.push(image.name);
+      return Response.json({ name: image.name, subfolder: "", type: "input" });
+    }) as typeof fetch;
+
+    const settings = { server: "http://127.0.0.1:9", deleteFromServer: true };
+    await uploadImage(path, settings);
+    await uploadImage(path, settings);
+
+    expect(names[0]).toMatch(/^cct-[0-9a-f]{8}-ref\.png$/);
+    expect(names[1]).toMatch(/^cct-[0-9a-f]{8}-ref\.png$/);
+    expect(names[0]).not.toBe(names[1]);
+  });
+});
+
+describe("runGraphWithUploads", () => {
+  /** Serveur qui accepte les envois, refuse le prompt (`/prompt` 400) et note les effacements. */
+  function refusingServer(deleteBodies: unknown[], uploadStatus = (_n: number) => 200): typeof fetch {
+    let uploads = 0;
+    return (async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/upload/image")) {
+        uploads += 1;
+        const image = (init?.body as FormData).get("image") as File;
+        const status = uploadStatus(uploads);
+        return status === 200
+          ? Response.json({ name: image.name, subfolder: "refs", type: "input" })
+          : new Response(null, { status });
+      }
+      if (url.endsWith("/prompt")) return Response.json({ error: { message: "graphe refusé" } }, { status: 400 });
+      if (url.endsWith("/api/output/delete")) {
+        deleteBodies.push(JSON.parse(String(init?.body)));
+        return Response.json({ deleted: [], missing: [] });
+      }
+      throw new Error(`requête inattendue : ${url}`);
+    }) as typeof fetch;
+  }
+
+  test("efface les envois du dossier input quand la génération échoue, et garde son erreur", async () => {
+    const path = await imageFile();
+    const deleteBodies: unknown[] = [];
+    globalThis.fetch = refusingServer(deleteBodies);
+    let built: (string | null)[] = [];
+
+    const error = await runGraphWithUploads([path, null], { server: "http://127.0.0.1:9", deleteFromServer: true }, (names) => {
+      built = names;
+      return {};
+    }).catch((e) => e);
+
+    expect(String(error)).toContain("400");
+    expect(built[0]).toMatch(/^refs\/cct-[0-9a-f]{8}-ref\.png$/);
+    expect(built[1]).toBeNull();
+    const name = built[0]!.slice("refs/".length);
+    expect(deleteBodies).toEqual([{ files: [{ filename: name, subfolder: "refs", type: "input" }] }]);
+  });
+
+  test("efface le premier envoi si le second échoue", async () => {
+    const path = await imageFile();
+    const deleteBodies: unknown[] = [];
+    globalThis.fetch = refusingServer(deleteBodies, (n) => (n === 2 ? 500 : 200));
+
+    const error = await runGraphWithUploads([path, path], { server: "http://127.0.0.1:9", deleteFromServer: true }, () => ({})).catch((e) => e);
+
+    expect(String(error)).toContain("/upload/image a répondu 500");
+    expect(deleteBodies).toHaveLength(1);
+    expect((deleteBodies[0] as { files: unknown[] }).files).toHaveLength(1);
+  });
+
+  test("laisse les envois sans deleteFromServer", async () => {
+    const path = await imageFile();
+    const deleteBodies: unknown[] = [];
+    globalThis.fetch = refusingServer(deleteBodies);
+
+    await runGraphWithUploads([path], { server: "http://127.0.0.1:9" }, () => ({})).catch(() => undefined);
+
+    expect(deleteBodies).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
-import {runGraph, type GenerateSettings} from "../client";
-import {uploadImage} from "../upload";
+import {type GenerateSettings} from "../client";
+import {runGraphWithUploads} from "../upload";
 import {applyMeta, type ApiInput, type ApiPrompt} from "../workflow";
 
 /** Les réglages du workflow d'origine : 20 pas (10 high noise, 10 low noise), cfg 3.5, 5 s à 16 images/s. */
@@ -564,7 +564,6 @@ export function buildWan22Prompt(options: Wan22Options, meta: Record<string, Api
  * Ici, `options.inputImage` est un chemin local ; il est remplacé par le nom que renvoie `uploadImage`.
  */
 export async function generateWan22(options: Wan22Options, settings: GenerateSettings = {}): Promise<string[]> {
-    const inputImage = await uploadImage(options.inputImage, settings);
-    settings.logger?.log(`[comfyui] image de départ envoyée`, inputImage);
-    return runGraph(buildWan22Prompt({...options, inputImage}, settings.meta ?? null), settings);
+    return runGraphWithUploads([options.inputImage], settings,
+        ([inputImage]) => buildWan22Prompt({...options, inputImage: inputImage!}, settings.meta ?? null));
 }

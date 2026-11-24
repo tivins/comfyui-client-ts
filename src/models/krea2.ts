@@ -1,5 +1,5 @@
 import {runGraph, type GenerateSettings} from "../client";
-import {uploadImage} from "../upload";
+import {runGraphWithUploads} from "../upload";
 import {
     applyMeta,
     chainLoras,
@@ -343,7 +343,6 @@ export async function generateKrea2(options: Krea2Options, settings: GenerateSet
  * le nom que renvoie `uploadImage`.
  */
 export async function generateKrea2Edit(options: Krea2EditOptions, settings: GenerateSettings = {}): Promise<string[]> {
-    const referenceImage = await uploadImage(options.referenceImage, settings);
-    settings.logger?.log(`[comfyui] référence envoyée`, referenceImage);
-    return runGraph(buildKrea2EditPrompt({...options, referenceImage}, settings.meta ?? null), settings);
+    return runGraphWithUploads([options.referenceImage], settings,
+        ([referenceImage]) => buildKrea2EditPrompt({...options, referenceImage: referenceImage!}, settings.meta ?? null));
 }

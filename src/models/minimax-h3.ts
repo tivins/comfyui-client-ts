@@ -1,5 +1,5 @@
-import {runGraph, type GenerateSettings} from "../client";
-import {uploadImage} from "../upload";
+import {type GenerateSettings} from "../client";
+import {runGraphWithUploads} from "../upload";
 import {applyMeta, chainLoras, type ApiInput, type ApiPrompt, type LoRA} from "../workflow";
 
 /**
@@ -318,12 +318,6 @@ export function videoFirst(paths: string[]): string[] {
  * que renvoie `uploadImage`.
  */
 export async function generateMiniMaxH3(options: MiniMaxH3Options, settings: GenerateSettings = {}): Promise<string[]> {
-    const inputImage = await uploadImage(options.inputImage, settings);
-    settings.logger?.log(`[comfyui] image de départ envoyée`, inputImage);
-    let lastImage: string | null = null;
-    if (options.lastImage !== null) {
-        lastImage = await uploadImage(options.lastImage, settings);
-        settings.logger?.log(`[comfyui] dernière image envoyée`, lastImage);
-    }
-    return videoFirst(await runGraph(buildMiniMaxH3Prompt({...options, inputImage, lastImage}, settings.meta ?? null), settings));
+    return videoFirst(await runGraphWithUploads([options.inputImage, options.lastImage], settings,
+        ([inputImage, lastImage]) => buildMiniMaxH3Prompt({...options, inputImage: inputImage!, lastImage: lastImage ?? null}, settings.meta ?? null)));
 }

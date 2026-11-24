@@ -92,6 +92,8 @@ const paths = await generateQwenImage(options, settings);
 
 `deleteFromServer` efface les fichiers produits du dossier `output` du serveur (`POST /api/output/delete`), puis retire le prompt de l'historique (`POST /history`) et de la file (`POST /queue`), avec `{ delete: [promptId] }`. Seuls les fichiers `type: "output"` sont effacés : ceux de `temp` restent, ComfyUI vide ce dossier au démarrage.
 
+Les fonctions `generate*` qui envoient des images (`generateMiniMaxH3`, `generateKrea2Edit`, `generateFlux3Klein`, `generateMiniMaxH3Image`, `generateWan22`) passent par `runGraphWithUploads` : avec `deleteFromServer`, elles effacent aussi du dossier `input` les images envoyées, que la génération réussisse ou non. Chaque envoi reçoit alors un nom unique (`cct-<8 hex>-ref.png`), pour que deux générations sur la même image ne se partagent pas un fichier. `deleteUploads(names, settings)` efface des envois à la main. Un fichier `input` qui apparaît dans l'historique (aperçu d'un `LoadVideo`) n'est jamais effacé : c'est une source. L'effacement des envois demande la version du custom node qui accepte `type: "input"`.
+
 ComfyUI n'a pas de route pour effacer un fichier. `POST /api/output/delete` vient du custom node `comfyui-delete-output` (pas encore publié), à placer dans `ComfyUI/custom_nodes/`.
 
 Puis redémarrer ComfyUI. Sans le custom node, ComfyUI répond 404 ou 405 : les fichiers restent, `logger.warn` le signale, et l'historique est retiré comme avant. Une autre erreur (chemin hors du dossier `output`, fichier impossible à effacer) lève une exception, et l'historique reste.
@@ -246,7 +248,7 @@ Les champs de `Krea2Options` sont repris. Ceux qui s'ajoutent :
 
 La consigne est une instruction d'édition. Ce qu'elle ne mentionne pas (tenue, accessoires, fond, cadrage, lumière) est repris de la référence. `negativePrompt` part dans un second `Krea2EditGroundedEncode` sur la même image ; il ne compte qu'à `cfg` > 1 et le paquet le laisse vide. Le préfixe des fichiers enregistrés est `Krea2Edit`.
 
-`uploadImage(path, settings)` renvoie la valeur à mettre dans `LoadImage.inputs.image`. Si un fichier identique existe déjà dans `input/`, ComfyUI le réutilise. S'il existe un fichier différent sous le même nom, ComfyUI enregistre la nouvelle image sous `nom (1).png`.
+`uploadImage(path, settings)` renvoie la valeur à mettre dans `LoadImage.inputs.image`. Si un fichier identique existe déjà dans `input/`, ComfyUI le réutilise. S'il existe un fichier différent sous le même nom, ComfyUI enregistre la nouvelle image sous `nom (1).png`. Avec `settings.deleteFromServer`, le nom envoyé reçoit un préfixe unique (`cct-<8 hex>-`).
 
 ## FLUX 3 Image Klein
 

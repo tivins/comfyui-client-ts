@@ -1,5 +1,5 @@
-import {runGraph, type GenerateSettings} from "../client";
-import {uploadImage} from "../upload";
+import {type GenerateSettings} from "../client";
+import {runGraphWithUploads} from "../upload";
 import {applyMeta, Sampler, Scheduler, type ApiInput, type ApiNode, type ApiPrompt} from "../workflow";
 
 /** Le modèle accepte au plus 10 images de référence. */
@@ -174,12 +174,6 @@ export async function generateFlux3Klein(options: Flux3KleinOptions, settings: G
   if (options.referenceImages.length > FLUX3_KLEIN_MAX_REFERENCES) {
     throw new Error(`FLUX 3 Klein : ${options.referenceImages.length} images de référence, ${FLUX3_KLEIN_MAX_REFERENCES} au plus`);
   }
-  const referenceImages: string[] = [];
-  for (const path of options.referenceImages) {
-    referenceImages.push(await uploadImage(path, settings));
-  }
-  if (referenceImages.length > 0) {
-    settings.logger?.log(`[comfyui] références envoyées`, referenceImages.join(", "));
-  }
-  return runGraph(buildFlux3KleinPrompt({...options, referenceImages}, settings.meta ?? null), settings);
+  return runGraphWithUploads(options.referenceImages, settings,
+    (referenceImages) => buildFlux3KleinPrompt({...options, referenceImages}, settings.meta ?? null));
 }

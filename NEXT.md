@@ -1,4 +1,4 @@
-# Reprise — comfyui-client-ts (2026-11-23)
+# Reprise — comfyui-client-ts (2026-11-24)
 
 ## Où j'en suis
 - 0.26.0 (`MiniMaxH3Options.loras`) pas essayée sur le serveur.
@@ -11,6 +11,7 @@
 - [ ] Idée « voix » (John, June…) : description en anglais injectée telle quelle par le code dans la ligne `Vocal Gender & Timbre` (Singer A/B), le reste des Vocal Details écrit par le LLM. MiniMax Music 3 n'a pas de voix de référence : la voix variera d'un morceau à l'autre. À tester sur 3–4 morceaux avant de bâtir la bibliothèque.
 
 ## Prochaines étapes
+- MiniMax H3 ref2va (`MiniMaxH3ReferenceToVideo`, `MiniMaxH3AddGuide`) : diffusion int8 + LoRA Turbo 4 pas sur forge (`download_minimax_h3.sh ref2va`). Essai A réussi (`output/minimax-h3-ref/`, 2 images, 1024×576, 20 pas, 591 s) : identités tenues, réplique exacte. Essai B Turbo 4 pas : 134 s, même scène, plus contrasté, détails un peu lissés, son à −0,5 dB crête (A : −6,6). Essai D (vidéo A en `ref_video` + 2 nouvelles images, Turbo, 470 s) : la vidéo a tout recopié. D2, prompt « <Video 1> seulement pour le mouvement, l'homme et le chien sont remplacés par… » : personnages remplacés, mouvement et caméra repris, réplique exacte ; mais le port de A reste en fond malgré le prompt. Suite, validée : (1) ControlNet Fun Union en pose (`video_minimax_h3_fun_controlnet_union`) : nœuds tous dans le cœur de ComfyUI (SDPose, RT-DETR) ; fichiers téléchargés (`download_minimax_h3.sh controlnet`), `model_patches` déclaré, essais en cours ; SDPose ne suit que les humains ; (2) prolonger un personnage avec la vidéo précédente en `ref_video` (même personnage, nouvelle scène) ; (3) `ref_image_size: max`, `AddGuide` ; puis `generateMiniMaxH3Reference`.
 - MiniMax H3 (int8 par défaut depuis 0.29.0), à essayer : une LoRA en int8 (casse le mouvement en NVFP4) ; int8 Turbo comme brouillon de l'int8 complet, sur 2–3 autres images.
 - `TODO.md` : lire les métadonnées mp4 via le graphe d'API (un vieux mp4 de `ComfyUI/input` les porte dans le tag `comment`, format VideoHelperSuite).
   - Attendu aussi par diffusion_explorer (2026-10-21) : son `bun scan` indexe les vidéos sans provenance tant que ce lecteur manque.
@@ -20,6 +21,7 @@
 - Piste de llm-multi-ts (2026-10-18, rien décidé) : le délai de `waitForHistory` est fixe (30 min, `TIMEOUT_MS`, `client.ts:12`) et compte depuis l'envoi, attente dans la file ComfyUI comprise. Interroger `/queue` dirait si le job attend ou s'il tourne, et permettrait de ne compter que le temps d'exécution.
 
 ## Rappels
+- À suivre : [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) (leejet, sur ggml comme llama.cpp) : binaire compilé, GGUF, Qwen-Image, Z-Image, Wan 2.2, Flux 2 ; pas de MiniMax ni de musique. Alternative légère possible à ComfyUI pour un modèle courant (PC 8 Go, guichet).
 - Les fichiers générés sont dans `output/` (ignoré par git) ; ils s'écoutent avec la page de `/data/media/localGeneration`.
 - MiniMax H3 vidéo : la NVFP4 vient d'un dépôt communautaire (`lilcheaty/MiniMax-H3-NVFP4`) ; l'encodeur, les VAE et l'int8 de Comfy-Org (téléchargée sur forge) sont officiels.
 - Un graphe identique au précédent est servi par le cache de ComfyUI : avec `deleteFromServer`, son fichier a déjà été effacé, et `runGraph` lève une erreur qui le dit. Changer la graine.
